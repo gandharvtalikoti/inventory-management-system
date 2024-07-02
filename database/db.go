@@ -23,11 +23,6 @@ func ConnectDatabase() {
     if err != nil {
         log.Fatalf("Error connecting to database: %v", err)
     }
-
-    err = db.Ping()
-    if err != nil {
-        log.Fatalf("Error pinging database: %v", err)
-    }
     DB = db
     log.Println("Successfully connected to the database!")
 }
