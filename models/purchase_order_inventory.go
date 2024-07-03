@@ -7,3 +7,9 @@ type PurchaseOrderInventory struct {
 	Qty   int    `json:"qty"`
 	Batch string `json:"batch"`
 }
+
+type PurchaseOrderInventoryParams struct {
+	Sku_instance_id string `json:"sku_instance_id"`
+	Qty             int    `json:"qty"`
+	Batch           string `json:"batch"`
+}

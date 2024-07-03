@@ -6,3 +6,4 @@ type MPO struct {
 	InvoiceNumber   string `json:"invoice_number"`
 	Mpo_instance_id string `json:"mpo_instance_id"`
 }
+
