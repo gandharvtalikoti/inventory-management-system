@@ -5,19 +5,19 @@ import (
 )
 
 type SPO struct {
-	SPOID       int       `json:"spo_id"`
-	MPOID       int       `json:"mpo_id"`
-	InstanceID  string    `json:"instance_id"`
-	WarehouseID string    `json:"warehouse_id"`
-	DOA         time.Time `json:"doa"`
-	Status      string    `json:"status"`
+	SPOID         int       `json:"spo_id"`
+	MPOID         int       `json:"mpo_id"`
+	SpoInstanceId string    `json:"spo_instance_id"`
+	WarehouseID   string    `json:"warehouse_id"`
+	DOA           time.Time `json:"doa"`
+	Status        string    `json:"status"`
 }
 
 type SPOInputParams struct {
-	Spo_instanceID string    `json:"instance_id"`
-	WarehouseID    string    `json:"warehouse_id"`
-	DOA            time.Time `json:"doa"`
-	Status         string    `json:"status"`
+	SpoInstanceId string    `json:"spo_instance_id"`
+	WarehouseID   string    `json:"warehouse_id"`
+	DOA           time.Time `json:"doa"`
+	Status        string    `json:"status"`
 }
 
 // this will be input for createSPO function

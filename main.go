@@ -10,12 +10,15 @@ import (
 	"time"
 )
 
-func createSKU(sku_instanse_id string)(int){
-	query := `INSERT INTO SKU (sku_instance_id) VALUES ($1) RETURNING sku_id`
-	var skuID int
-	err := database.DB.QueryRow(query, sku_instanse_id).Scan(&skuID)
+func createSKU(sku_instanse_id string)(int64){
+	query := `INSERT INTO SKU (sku_instance_id) VALUES ($1)`
+	res, err := database.DB.Exec(query, sku_instanse_id)
 	if err != nil {
 		log.Fatalf("Error creating SKU: %v", err)
+	}
+	skuID, err := res.LastInsertId()
+	if err != nil {
+		fmt.Println("Error getting SKU ID: ", err)
 	}
 	return skuID
 }
@@ -63,7 +66,7 @@ func createSPO(spoParams models.SPOparams) (int, error) {
 			RETURNING spo_id`
 
 	var spoID int // ID of the newly created SPO
-	err = database.DB.QueryRow(query, mpoId, spoParams.Spo.Spo_instanceID, spoParams.Spo.WarehouseID, spoParams.Spo.DOA, spoParams.Spo.Status).Scan(&spoID)
+	err = database.DB.QueryRow(query, mpoId, spoParams.Spo.SpoInstanceId, spoParams.Spo.WarehouseID, spoParams.Spo.DOA, spoParams.Spo.Status).Scan(&spoID)
 	if err != nil {
 		return 0, fmt.Errorf("error creating SPO: %w", err)
 	}
@@ -111,7 +114,7 @@ func main() {
 			Mpo_instance_id: "I12345",
 		},
 		Spo: models.SPOInputParams{
-			Spo_instanceID: "I12345",
+			SpoInstanceId: "I12345",
 			WarehouseID:    "W12345",
 			DOA:            time.Now(),
 			Status:         "Pending",
@@ -149,7 +152,8 @@ func main() {
 	fmt.Printf("Retrieved MPO: %s\n", jsonMPO)
 
 	createSPO(newSPO)
-
-	createSKU("osaidhi237e1821e9jdo2")
 	
+	log.Println("SPO created successfully")
+	createSKU("psaiuiuygfhfgiuyi2")
+
 }
