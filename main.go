@@ -40,7 +40,7 @@ func createSPO(spo models.SPOparams) (int, error) {
 			RETURNING spo_id`
 
 		var spoID int // ID of the newly created SPO
-		err = database.DB.QueryRow(query, spo.MPOID, spo.InstanceID, spo.WarehouseID, spo.DOA, spo.Status).Scan(&spoID)
+		err = database.DB.QueryRow(query, spo., spo.InstanceID, spo.WarehouseID, spo.DOA, spo.Status).Scan(&spoID)
 		if err != nil {
 			return 0, fmt.Errorf("error creating SPO: %w", err)
 		}

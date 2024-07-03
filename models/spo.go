@@ -14,10 +14,10 @@ type SPO struct {
 }
 
 type SPOInputParams struct {
-	InstanceID  string    `json:"instance_id"`
-	WarehouseID string    `json:"warehouse_id"`
-	DOA         time.Time `json:"doa"`
-	Status      string    `json:"status"`
+	Spo_instanceID string    `json:"instance_id"`
+	WarehouseID    string    `json:"warehouse_id"`
+	DOA            time.Time `json:"doa"`
+	Status         string    `json:"status"`
 }
 
 // this will be input for createSPO function
