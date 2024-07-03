@@ -1,6 +1,6 @@
 package models
 
 type SKU struct {
-    SKUID       string `json:"skuId" gorm:"primaryKey"`
-    SKUEntityID string `json:"skuEntityId"`
+    SKUID        int `json:"sku_id"`
+    SKUEntityID  string `json:"sku_entity_id"`
 }
