@@ -1,33 +1,28 @@
+// main.go
+
 package main
 
 import (
-  "database/sql"
-  "fmt"
-  "log"
-
-  _ "github.com/lib/pq"
+    "inventory-management-system/config"
+    "inventory-management-system/database"
+    "log"
+    //"inventory-management-system/routes"
 )
 
 func main() {
-  connStr := "postgresql://inventory-sys_owner:xedTjh9BD2iZ@ep-tiny-mouse-a5awt0fq.us-east-2.aws.neon.tech/inventory-sys?sslmode=require"
-  db, err := sql.Open("postgres", connStr)
-  if err != nil {
-    log.Fatal(err)
-  }
-  defer db.Close()
-
-  rows, err := db.Query("select version()")
-  if err != nil {
-    log.Fatal(err)
-  }
-  defer rows.Close()
-
-  var version string
-  for rows.Next() {
-    err := rows.Scan(&version)
-    if err != nil {
-      log.Fatal(err)
+    // Load the configuration
+    if err := config.LoadConfig(); err != nil {
+        log.Fatalf("Error loading config: %v", err)
     }
-  }
-  fmt.Printf("version=%s\n", version)
+
+    // Connect to the database
+    if err := database.ConnectDatabase(); err != nil {
+        log.Fatalf("Error connecting to database: %v", err)
+    }
+    defer database.CloseDatabase()
+
+    // r := routes.SetupRouter()
+    // r.Run()
+
+    // Your main application logic goes here
 }

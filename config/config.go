@@ -1,14 +1,34 @@
+// config/config.go
+
 package config
 
 import (
-	"log"
-	"github.com/joho/godotenv"
+    "github.com/spf13/viper"
 )
 
-func LoadConfig() {
-    err := godotenv.Load()
-    if err != nil {
-        log.Fatalf("Error loading .env file: %v", err)
+type Config struct {
+    DBHost     string `mapstructure:"DB_HOST"`
+    DBPort     int    `mapstructure:"DB_PORT"`
+    DBUser     string `mapstructure:"DB_USER"`
+    DBPassword string `mapstructure:"DB_PASSWORD"`
+    DBName     string `mapstructure:"DB_NAME"`
+}
+
+var AppConfig Config
+
+func LoadConfig() error {
+    viper.SetConfigName("config")
+    viper.SetConfigType("yaml")
+    viper.AddConfigPath(".")
+    viper.AutomaticEnv()
+
+    if err := viper.ReadInConfig(); err != nil {
+        return err
     }
-    log.Println("Configuration loaded successfully")
+
+    if err := viper.Unmarshal(&AppConfig); err != nil {
+        return err
+    }
+
+    return nil
 }

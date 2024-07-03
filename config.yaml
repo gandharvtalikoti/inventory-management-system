@@ -1,0 +1,6 @@
+# config.yaml
+DB_HOST: "localhost"
+DB_PORT: 5432
+DB_USER: "postgres"
+DB_PASSWORD: "gzino"
+DB_NAME: "inventory-sys"
