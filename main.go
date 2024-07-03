@@ -24,28 +24,14 @@ func createMPO(mpo models.MPO) (int, error) {
 	return mpoID, nil
 }
 
-func createSPO(spo models.SPOparams) (int, error) {
+func createSPO(spoParams models.SPOparams) (int, error) {
 	// Check if mpo_id in models.SPO is present in MPO table
-	var count int
-	err := database.DB.QueryRow("SELECT COUNT(*) FROM MPO WHERE mpo_instance_id = $1", spo.Mpo.Mpo_instance_id).Scan(&count)
+	var mpoId int
+	err := database.DB.QueryRow("SELECT mpo_id FROM MPO WHERE mpo_instance_id = $1", spoParams.Mpo.Mpo_instance_id).Scan(&mpoId)
 	if err != nil {
 		return 0, fmt.Errorf("error checking MPO existence: %w", err)
 	}
-
-	if count > 0 {
-		// mpo_id exists in MPO table, insert into SPO
-		query := `
-			INSERT INTO SPO (mpo_id, instance_id, warehouse_id, doa, status)
-			VALUES ($1, $2, $3, $4, $5)
-			RETURNING spo_id`
-
-		var spoID int // ID of the newly created SPO
-		err = database.DB.QueryRow(query, spo., spo.InstanceID, spo.WarehouseID, spo.DOA, spo.Status).Scan(&spoID)
-		if err != nil {
-			return 0, fmt.Errorf("error creating SPO: %w", err)
-		}
-		return spoID, nil
-	} else {
+	if mpoId == 0 {
 		// mpo_id does not exist in MPO table, create MPO first
 		newMPO := models.MPO{
 			PDFFilename:     "example.pdf",
@@ -58,22 +44,20 @@ func createSPO(spo models.SPOparams) (int, error) {
 			return 0, fmt.Errorf("error creating MPO: %w", err)
 		}
 
-		// Update the MPOID in the SPO model
-		spo.MPOID = createdMPOID
-
-		// Insert into SPO
-		query := `
+		mpoId = createdMPOID
+	}
+	// if mpo_id exists while creating spo exists in mpo table then create SPO with the mpo_id and insert into SPO table
+	query := `
 			INSERT INTO SPO (mpo_id, instance_id, warehouse_id, doa, status)
 			VALUES ($1, $2, $3, $4, $5)
 			RETURNING spo_id`
 
-		var spoID int // ID of the newly created SPO
-		err = database.DB.QueryRow(query, spo.MPOID, spo.InstanceID, spo.WarehouseID, spo.DOA, spo.Status).Scan(&spoID)
-		if err != nil {
-			return 0, fmt.Errorf("error creating SPO: %w", err)
-		}
-		return spoID, nil
+	var spoID int // ID of the newly created SPO
+	err = database.DB.QueryRow(query, mpoId, spoParams.Spo.Spo_instanceID, spoParams.Spo.WarehouseID, spoParams.Spo.DOA, spoParams.Spo.Status).Scan(&spoID)
+	if err != nil {
+		return 0, fmt.Errorf("error creating SPO: %w", err)
 	}
+	return 0, nil
 }
 
 func getMPO(mpoID int) (models.MPO, error) {
@@ -109,35 +93,31 @@ func main() {
 		Mpo_instance_id: "I12345",
 	}
 
-	// Example usage of CRUD operations for SPO
-
 	// Create a new SPO
-newSPO := models.SPOparams{
+	newSPO := models.SPOparams{
 		Mpo: models.MPOInputParams{
 			PDFFilename:     "example.pdf",
 			InvoiceNumber:   "INV123456",
 			Mpo_instance_id: "I12345",
 		},
 		Spo: models.SPOInputParams{
-			InstanceID:  "I12345",
-			WarehouseID: "W12345",
-			DOA:         time.Now(),
-			Status:      "Pending",
+			Spo_instanceID: "I12345",
+			WarehouseID:    "W12345",
+			DOA:            time.Now(),
+			Status:         "Pending",
 		},
 		Po_inventory: []models.PurchaseOrderInventoryInputParams{
 			{
 				Sku_instance_id: "osaidhi237e1821e9jdo2",
-				Qty:  10,
-				Batch: "B12345",
+				Qty:             10,
+				Batch:           "B12345",
 			},
 			{
 				Sku_instance_id: "eoifhe89rfy4hf834uf9-23",
-				Qty:  10,
-				Batch: "B12345",
+				Qty:             10,
+				Batch:           "B12345",
 			},
 		},
-
-
 	}
 	createSPO(newSPO)
 	// Create a new MPO
