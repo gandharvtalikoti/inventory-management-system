@@ -10,6 +10,16 @@ import (
 	"time"
 )
 
+func createSKU(sku_instanse_id string)(int){
+	query := `INSERT INTO SKU (sku_instance_id) VALUES ($1) RETURNING sku_id`
+	var skuID int
+	err := database.DB.QueryRow(query, sku_instanse_id).Scan(&skuID)
+	if err != nil {
+		log.Fatalf("Error creating SKU: %v", err)
+	}
+	return skuID
+}
+
 func createMPO(mpo models.MPO) (int, error) {
 	query := `
     INSERT INTO MPO (pdf_filename, invoice_number, mpo_instance_id)
@@ -57,7 +67,7 @@ func createSPO(spoParams models.SPOparams) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("error creating SPO: %w", err)
 	}
-	return 0, nil
+	return spoID, nil
 }
 
 func getMPO(mpoID int) (models.MPO, error) {
@@ -137,5 +147,9 @@ func main() {
 		log.Fatalf("Error marshaling MPO to JSON: %v", err)
 	}
 	fmt.Printf("Retrieved MPO: %s\n", jsonMPO)
+
 	createSPO(newSPO)
+
+	createSKU("osaidhi237e1821e9jdo2")
+	
 }
