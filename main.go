@@ -7,7 +7,6 @@ import (
 	"inventory-management-system/database"
 	"inventory-management-system/models"
 	"log"
-
 	"time"
 )
 
@@ -28,7 +27,7 @@ func createMPO(mpo models.MPO) (int, error) {
 func createSPO(spo models.SPOparams) (int, error) {
 	// Check if mpo_id in models.SPO is present in MPO table
 	var count int
-	err := database.DB.QueryRow("SELECT COUNT(*) FROM MPO WHERE mpo_instance_id = $1", spo.Mpo_instance_id).Scan(&count)
+	err := database.DB.QueryRow("SELECT COUNT(*) FROM MPO WHERE mpo_instance_id = $1", spo.Mpo.Mpo_instance_id).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("error checking MPO existence: %w", err)
 	}
@@ -114,14 +113,30 @@ func main() {
 
 	// Create a new SPO
 newSPO := models.SPOparams{
-		MPOID:       1,
-		InstanceID:  "I12345",
-		WarehouseID: "W12345",
-		DOA:         time.Now(),
-		Status:      "Pending",
-		PDFFilename: "example.pdf",
-		InvoiceNumber: "INV123456",
-		Mpo_instance_id: "I12345",
+		Mpo: models.MPOInputParams{
+			PDFFilename:     "example.pdf",
+			InvoiceNumber:   "INV123456",
+			Mpo_instance_id: "I12345",
+		},
+		Spo: models.SPOInputParams{
+			InstanceID:  "I12345",
+			WarehouseID: "W12345",
+			DOA:         time.Now(),
+			Status:      "Pending",
+		},
+		Po_inventory: []models.PurchaseOrderInventoryInputParams{
+			{
+				Sku_instance_id: "osaidhi237e1821e9jdo2",
+				Qty:  10,
+				Batch: "B12345",
+			},
+			{
+				Sku_instance_id: "eoifhe89rfy4hf834uf9-23",
+				Qty:  10,
+				Batch: "B12345",
+			},
+		},
+
 
 	}
 	createSPO(newSPO)
