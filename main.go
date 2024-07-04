@@ -97,6 +97,17 @@ func getMPO(mpoID int) (models.MPO, error) {
 	return mpo, nil
 }
 
+func deleteSPO(SpoInstanceId string) bool {
+	query := `DELETE FROM SPO WHERE instance_id = $1`
+	_, err := database.DB.Exec(query, SpoInstanceId)
+	if err != nil {
+		return false
+	}
+	return true
+
+}
+
+
 func main() {
 	// Load the configuration
 	if err := config.LoadConfig(); err != nil {
@@ -163,5 +174,6 @@ func main() {
 	//createSPO(newSPO)
 
 	//createSKU("sdsadasdwdwa")
+	deleteSPO("I12345")
 
 }
