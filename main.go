@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func createSKU(sku_instanse_id string)(int64){
+func createSKU(sku_instanse_id string) int64 {
 	query := `INSERT INTO SKU (sku_instance_id) VALUES ($1)`
 	res, err := database.DB.Exec(query, sku_instanse_id)
 	if err != nil {
@@ -47,11 +47,10 @@ func createSPO(spoParams models.SPOparams) (int, error) {
 	if mpoId == 0 {
 		// mpo_id does not exist in MPO table, create MPO first
 		newMPO := models.MPO{
-			PDFFilename:     "example.pdf",
-			InvoiceNumber:   "INV123456",
-			Mpo_instance_id: "I12345",
+			PDFFilename:     spoParams.Mpo.PDFFilename,
+			InvoiceNumber:   spoParams.Mpo.InvoiceNumber,
+			Mpo_instance_id: spoParams.Mpo.Mpo_instance_id,
 		}
-
 		createdMPOID, err := createMPO(newMPO)
 		if err != nil {
 			return 0, fmt.Errorf("error creating MPO: %w", err)
@@ -103,7 +102,7 @@ func main() {
 	newMPO := models.MPO{
 		PDFFilename:     "example.pdf",
 		InvoiceNumber:   "INV123456",
-		Mpo_instance_id: "I12345",
+		Mpo_instance_id: "blabla12345",
 	}
 
 	// Create a new SPO
@@ -115,9 +114,9 @@ func main() {
 		},
 		Spo: models.SPOInputParams{
 			SpoInstanceId: "I12345",
-			WarehouseID:    "W12345",
-			DOA:            time.Now(),
-			Status:         "Pending",
+			WarehouseID:   "W12345",
+			DOA:           time.Now(),
+			Status:        "Pending",
 		},
 		Po_inventory: []models.PurchaseOrderInventoryInputParams{
 			{
@@ -152,7 +151,7 @@ func main() {
 	fmt.Printf("Retrieved MPO: %s\n", jsonMPO)
 
 	createSPO(newSPO)
-	
+
 	log.Println("SPO created successfully")
 	createSKU("psaiuiuygfhfgiuyi2")
 
