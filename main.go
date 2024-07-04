@@ -7,6 +7,7 @@ import (
 	"inventory-management-system/database"
 	"inventory-management-system/models"
 	"log"
+	"time"
 )
 
 func createSKU(sku_instanse_id string) int {
@@ -171,36 +172,40 @@ func main() {
 	// }
 
 	// Create a new SPO
-	// newSPO := models.SPOparams{
-	// 	Mpo: models.MPOInputParams{
-	// 		PDFFilename:     "example.pdf",
-	// 		InvoiceNumber:   "INV123456",
-	// 		Mpo_instance_id: "hhhhhhhh",
-	// 	},
-	// 	Spo: models.SPOInputParams{
-	// 		SpoInstanceId: "aewdw",
-	// 		WarehouseID:   "W12345",
-	// 		DOA:           time.Now(),
-	// 		Status:        "Pending",
-	// 	},
-	// 	Po_inventory: []models.PurchaseOrderInventoryInputParams{
-	// 		{
-	// 			Sku_instance_id: "osaidhi237e1821e9jdo2",
-	// 			Qty:             20,
-	// 			Batch:           "B12345",
-	// 		},
-	// 		{
-	// 			Sku_instance_id: "eoifhe89rfy4hf834uf9",
-	// 			Qty:             60,
-	// 			Batch:           "B12345",
-	// 		},
-	// 		{
-	// 			Sku_instance_id: "psaiuiuygfhfgiuyi2",
-	// 			Qty:             68,
-	// 			Batch:           "saderfe",
-	// 		},
-	// 	},
-	// }
+	newSPO := models.SPOparams{
+		Mpo: models.MPOInputParams{
+			PDFFilename:     "example.pdf",
+			InvoiceNumber:   "INV123456",
+			Mpo_instance_id: "hhhhhhhh",
+		},
+		Spo: models.SPOInputParams{
+			SpoInstanceId: "aewdw",
+			WarehouseID:   "W12345",
+			DOA:           time.Now(),
+			Status:        "Pending",
+		},
+		Po_inventory: []models.PurchaseOrderInventoryInputParams{
+			{
+				Sku_instance_id: "osaidhi237e1821e9jdo2",
+				Qty:             20,
+				Batch:           "B12345",
+			},
+			{
+				Sku_instance_id: "eoifhe89rfy4hf834uf9",
+				Qty:             60,
+				Batch:           "B12345",
+			},
+			{
+				Sku_instance_id: "psaiuiuygfhfgiuyi2",
+				Qty:             68,
+				Batch:           "saderfe",
+			},
+		},
+	}
+
+	addNewSpo := models.SPOInputParams{
+		
+	}
 
 	// Create a new MPO
 	//createMPO(newMPO)
@@ -220,9 +225,8 @@ func main() {
 	// }
 	// fmt.Printf("Retrieved MPO: %s\n", jsonMPO)
 
-	//createSPO(newSPO)
-
-	createSKU("augfyeaf")
+	createSPO(newSPO)
+	//createSKU("augfyeaf")
 	//deleteSPO("I12345")
 	//deleteSku("sdsadasdwdwa")
 
