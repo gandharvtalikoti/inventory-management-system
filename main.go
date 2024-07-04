@@ -1,13 +1,14 @@
 package main
 
 import (
-	"encoding/json"
+	//"encoding/json"
 	"fmt"
 	"inventory-management-system/config"
 	"inventory-management-system/database"
 	"inventory-management-system/models"
 	"log"
-	"time"
+	//"time"
+	//"time"
 )
 
 func createSKU(sku_instanse_id string) int64 {
@@ -23,14 +24,21 @@ func createSKU(sku_instanse_id string) int64 {
 	return skuID
 }
 
-func createMPO(mpo models.MPO) (int, error) {
+func createMPO(mpo models.MPOInputParams) (int64, error) {
 	query := `
     INSERT INTO MPO (pdf_filename, invoice_number, mpo_instance_id)
     VALUES ($1, $2, $3)
     RETURNING mpo_id`
 
-	var mpoID int // ID of the newly created MPO
-	err := database.DB.QueryRow(query, mpo.PDFFilename, mpo.InvoiceNumber, mpo.Mpo_instance_id).Scan(&mpoID)
+	//var mpoID int // ID of the newly created MPO
+	res, err := database.DB.Exec(query, mpo.PDFFilename, mpo.InvoiceNumber, mpo.Mpo_instance_id)
+	if err != nil {
+		return 0, fmt.Errorf("error creating MPO: %w", err)
+
+	}
+	mpoID, err := res.LastInsertId()
+	log.Println("new mpo created successfully")
+
 	if err != nil {
 		return 0, fmt.Errorf("error creating MPO: %w", err)
 	}
@@ -39,14 +47,16 @@ func createMPO(mpo models.MPO) (int, error) {
 
 func createSPO(spoParams models.SPOparams) (int, error) {
 	// Check if mpo_id in models.SPO is present in MPO table
-	var mpoId int
+	fmt.Println("check")
+	var mpoId int64
 	err := database.DB.QueryRow("SELECT mpo_id FROM MPO WHERE mpo_instance_id = $1", spoParams.Mpo.Mpo_instance_id).Scan(&mpoId)
 	if err != nil {
-		return 0, fmt.Errorf("error checking MPO existence: %w", err)
+		fmt.Errorf("error checking MPO existence: %w", err)
 	}
+	fmt.Printf("MPO ID: %d\n", mpoId)
 	if mpoId == 0 {
 		// mpo_id does not exist in MPO table, create MPO first
-		newMPO := models.MPO{
+		newMPO := models.MPOInputParams{
 			PDFFilename:     spoParams.Mpo.PDFFilename,
 			InvoiceNumber:   spoParams.Mpo.InvoiceNumber,
 			Mpo_instance_id: spoParams.Mpo.Mpo_instance_id,
@@ -55,6 +65,7 @@ func createSPO(spoParams models.SPOparams) (int, error) {
 		if err != nil {
 			return 0, fmt.Errorf("error creating MPO: %w", err)
 		}
+		fmt.Printf("Created MPO with ID: %d\n", createdMPOID)
 
 		mpoId = createdMPOID
 	}
@@ -99,60 +110,58 @@ func main() {
 	defer database.CloseDatabase()
 
 	// Example usage of CRUD operations
-	newMPO := models.MPO{
-		PDFFilename:     "example.pdf",
-		InvoiceNumber:   "INV123456",
-		Mpo_instance_id: "blabla12345",
-	}
+	// newMPO := models.MPOInputParams{
+	// 	PDFFilename:     "example.pdf",
+	// 	InvoiceNumber:   "INV123456",
+	// 	Mpo_instance_id: "blabla12345",
+	// }
 
 	// Create a new SPO
-	newSPO := models.SPOparams{
-		Mpo: models.MPOInputParams{
-			PDFFilename:     "example.pdf",
-			InvoiceNumber:   "INV123456",
-			Mpo_instance_id: "I12345",
-		},
-		Spo: models.SPOInputParams{
-			SpoInstanceId: "I12345",
-			WarehouseID:   "W12345",
-			DOA:           time.Now(),
-			Status:        "Pending",
-		},
-		Po_inventory: []models.PurchaseOrderInventoryInputParams{
-			{
-				Sku_instance_id: "osaidhi237e1821e9jdo2",
-				Qty:             10,
-				Batch:           "B12345",
-			},
-			{
-				Sku_instance_id: "eoifhe89rfy4hf834uf9-23",
-				Qty:             10,
-				Batch:           "B12345",
-			},
-		},
-	}
-	createSPO(newSPO)
+	// newSPO := models.SPOparams{
+	// 	Mpo: models.MPOInputParams{
+	// 		PDFFilename:     "example.pdf",
+	// 		InvoiceNumber:   "INV123456",
+	// 		Mpo_instance_id: "nnn",
+	// 	},
+	// 	Spo: models.SPOInputParams{
+	// 		SpoInstanceId: "I12345",
+	// 		WarehouseID:   "W12345",
+	// 		DOA:           time.Now(),
+	// 		Status:        "Pending",
+	// 	},
+	// 	Po_inventory: []models.PurchaseOrderInventoryInputParams{
+	// 		{
+	// 			Sku_instance_id: "osaidhi237e1821e9jdo2",
+	// 			Qty:             10,
+	// 			Batch:           "B12345",
+	// 		},
+	// 		{
+	// 			Sku_instance_id: "eoifhe89rfy4hf834uf9-23",
+	// 			Qty:             10,
+	// 			Batch:           "B12345",
+	// 		},
+	// 	},
+	// }
 	// Create a new MPO
-	createdMPOID, err := createMPO(newMPO)
-	if err != nil {
-		log.Fatalf("Error creating MPO: %v", err)
-	}
-	fmt.Printf("Created MPO with ID: %d\n", createdMPOID)
+	//createMPO(newMPO)
+	// if err != nil {
+	// 	log.Fatalf("Error creating MPO: %v", err)
+	// }
+	// fmt.Printf("Created MPO with ID: %d\n", createdMPOID)
 
-	// Get the created MPO
-	retrievedMPO, err := getMPO(createdMPOID)
-	if err != nil {
-		log.Fatalf("Error retrieving MPO: %v", err)
-	}
-	jsonMPO, err := json.Marshal(retrievedMPO)
-	if err != nil {
-		log.Fatalf("Error marshaling MPO to JSON: %v", err)
-	}
-	fmt.Printf("Retrieved MPO: %s\n", jsonMPO)
+	// // Get the created MPO
+	// retrievedMPO, err := getMPO(createdMPOID)
+	// if err != nil {
+	// 	log.Fatalf("Error retrieving MPO: %v", err)
+	// }
+	// jsonMPO, err := json.Marshal(retrievedMPO)
+	// if err != nil {
+	// 	log.Fatalf("Error marshaling MPO to JSON: %v", err)
+	// }
+	// fmt.Printf("Retrieved MPO: %s\n", jsonMPO)
 
-	createSPO(newSPO)
+	//createSPO(newSPO)
 
-	log.Println("SPO created successfully")
-	createSKU("psaiuiuygfhfgiuyi2")
+	//createSKU("sdsadasdwdwa")
 
 }
