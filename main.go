@@ -152,6 +152,48 @@ func deleteSku(sku_instance_id string) bool {
 	return true
 }
 
+func addSpo(addSpo models.AddNewSpoInputParams) (int, error) {
+	// Check if mpo_id in models.SPO is present in MPO table
+	fmt.Println("check addSpo")
+	var mpoId int
+	err := database.DB.QueryRow("SELECT mpo_id FROM MPO WHERE mpo_instance_id = $1", addSpo.MpiInstanceId).Scan(&mpoId)
+	if err != nil {
+		_ = fmt.Errorf("error checking MPO existence: %w", err)
+	}
+	fmt.Printf("MPO ID: %d\n", mpoId)
+	if mpoId == 0 {
+		fmt.Println("MPO with instance ID does not exist", addSpo.MpiInstanceId)
+		return 0, nil
+	}
+	// if mpo_id exists while creating spo exists in mpo table then create SPO with the mpo_id and insert into SPO table
+	query := `
+			INSERT INTO SPO (mpo_id, instance_id, warehouse_id, doa, status)
+			VALUES ($1, $2, $3, $4, $5)
+			RETURNING spo_id`
+
+	var spoID int // ID of the newly created SPO
+	err = database.DB.QueryRow(query, mpoId, addSpo.Spo.SpoInstanceId, addSpo.Spo.WarehouseID, addSpo.Spo.DOA, addSpo.Spo.Status).Scan(&spoID)
+	if err != nil {
+		fmt.Errorf("error creating SPO: %w", err)
+	}
+	//return spoID, nil
+
+	// Insert into POI table
+	for _, poi := range addSpo.Po_inventory {
+		// get the sku_id from sku table using sku_instance_id, if not there print err
+		skuID := GetSKUId(poi.Sku_instance_id)
+		fmt.Println("SKU ID: ", skuID)
+		// Insert into POI table
+		query := ` INSERT INTO PO_Inventory (sku_id,spo_id, qty, batch)
+			VALUES ($1, $2, $3, $4)`
+		_, err = database.DB.Exec(query, skuID, spoID, poi.Qty, poi.Batch)
+		if err != nil {
+			fmt.Errorf("error creating POI: %w", err)
+		}
+	}
+	return spoID, nil
+}
+
 func main() {
 	// Load the configuration
 	if err := config.LoadConfig(); err != nil {
@@ -171,18 +213,45 @@ func main() {
 	// 	Mpo_instance_id: "blabla12345",
 	// }
 
-	// Create a new SPO
-	newSPO := models.SPOparams{
-		Mpo: models.MPOInputParams{
-			PDFFilename:     "example.pdf",
-			InvoiceNumber:   "INV123456",
-			Mpo_instance_id: "hhhhhhhh",
-		},
+	// Create a SPO
+	// newSPO := models.SPOparams{
+	// 	Mpo: models.MPOInputParams{
+	// 		PDFFilename:     "example.pdf",
+	// 		InvoiceNumber:   "INV123456",
+	// 		Mpo_instance_id: "hhhhhhhh",
+	// 	},
+	// 	Spo: models.SPOInputParams{
+	// 		SpoInstanceId: "aewdw",
+	// 		WarehouseID:   "W12345",
+	// 		DOA:           time.Now(),
+	// 		Status:        "Pending",
+	// 	},
+	// 	Po_inventory: []models.PurchaseOrderInventoryInputParams{
+	// 		{
+	// 			Sku_instance_id: "osaidhi237e1821e9jdo2",
+	// 			Qty:             20,
+	// 			Batch:           "B12345",
+	// 		},
+	// 		{
+	// 			Sku_instance_id: "eoifhe89rfy4hf834uf9",
+	// 			Qty:             60,
+	// 			Batch:           "B12345",
+	// 		},
+	// 		{
+	// 			Sku_instance_id: "psaiuiuygfhfgiuyi2",
+	// 			Qty:             68,
+	// 			Batch:           "saderfe",
+	// 		},
+	// 	},
+	// }
+
+	addNewSpoToExistingMpo := models.AddNewSpoInputParams{
+		MpiInstanceId: "ff",
 		Spo: models.SPOInputParams{
 			SpoInstanceId: "aewdw",
 			WarehouseID:   "W12345",
 			DOA:           time.Now(),
-			Status:        "Pending",
+			Status:        "Next status",
 		},
 		Po_inventory: []models.PurchaseOrderInventoryInputParams{
 			{
@@ -202,11 +271,9 @@ func main() {
 			},
 		},
 	}
+	addSpo(addNewSpoToExistingMpo)
 
-	addNewSpo := models.SPOInputParams{
-		
-	}
-
+	
 	// Create a new MPO
 	//createMPO(newMPO)
 	// if err != nil {
@@ -225,7 +292,7 @@ func main() {
 	// }
 	// fmt.Printf("Retrieved MPO: %s\n", jsonMPO)
 
-	createSPO(newSPO)
+	//createSPO(newSPO)
 	//createSKU("augfyeaf")
 	//deleteSPO("I12345")
 	//deleteSku("sdsadasdwdwa")

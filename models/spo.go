@@ -27,8 +27,8 @@ type SPOparams struct {
 	Po_inventory []PurchaseOrderInventoryInputParams `json:"po_inventory"`
 }
 
-type addNewSpo struct {
-	MpoId        string                              `json:"mpo_id"`
-	Spo          SPOInputParams                      `json:"spo"`
-	Po_inventory []PurchaseOrderInventoryInputParams `json:"po_inventory"`
+type AddNewSpoInputParams struct {
+	MpiInstanceId string                              `json:"mpo_id"`
+	Spo           SPOInputParams                      `json:"spo"`
+	Po_inventory  []PurchaseOrderInventoryInputParams `json:"po_inventory"`
 }
