@@ -7,20 +7,28 @@ import (
 	"inventory-management-system/database"
 	"inventory-management-system/models"
 	"log"
-	
 )
 
-func createSKU(sku_instanse_id string) int64 {
-	query := `INSERT INTO SKU (sku_instance_id) VALUES ($1)`
-	res, err := database.DB.Exec(query, sku_instanse_id)
+func createSKU(sku_instanse_id string) int {
+	// check if sku_instance_id exists in SKU table
+	var skuID int
+	err := database.DB.QueryRow("SELECT sku_id FROM SKU WHERE sku_instance_id = $1", sku_instanse_id).Scan(&skuID)
 	if err != nil {
-		log.Fatalf("Error creating SKU: %v", err)
+		_ = fmt.Errorf("error checking SKU existence: %w", err)
 	}
-	skuID, err := res.LastInsertId()
+	if skuID != 0 {
+		// SKU with sku_instance_id already exists
+		fmt.Printf("SKU with instance ID %s already exists\n", sku_instanse_id)
+		return skuID
+	}
+	// SKU with sku_instance_id does not exist, create a new SKU
+	query := `INSERT INTO SKU (sku_instance_id) VALUES ($1)`
+	err = database.DB.QueryRow(query, sku_instanse_id).Scan(&skuID)
 	if err != nil {
-		fmt.Println("Error getting SKU ID: ", err)
+		fmt.Errorf("error creating SKU: %w", err)
 	}
 	return skuID
+
 }
 
 func createMPO(mpo models.MPOInputParams) (int, error) {
@@ -43,7 +51,7 @@ func createMPO(mpo models.MPOInputParams) (int, error) {
 func GetSKUId(sku_instance_id string) int {
 	var skuID int
 	err := database.DB.QueryRow("SELECT sku_id FROM SKU WHERE sku_instance_id = $1", sku_instance_id).Scan(&skuID)
-	
+
 	if err != nil {
 		_ = fmt.Errorf("error checking SKU existence: %w", err)
 	}
@@ -133,7 +141,6 @@ func deleteSPO(SpoInstanceId string) bool {
 	return true
 }
 
-
 func deleteSku(sku_instance_id string) bool {
 	query := `DELETE FROM SKU WHERE sku_instance_id = $1`
 	_, err := database.DB.Exec(query, sku_instance_id)
@@ -215,8 +222,8 @@ func main() {
 
 	//createSPO(newSPO)
 
-	//createSKU("eoifhe89rfy4hf834uf9")
+	createSKU("augfyeaf")
 	//deleteSPO("I12345")
-	deleteSku("sdsadasdwdwa")
+	//deleteSku("sdsadasdwdwa")
 
 }
