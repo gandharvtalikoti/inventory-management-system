@@ -32,3 +32,11 @@ type AddNewSpoInputParams struct {
 	Spo           SPOInputParams                      `json:"spo"`
 	Po_inventory  []PurchaseOrderInventoryInputParams `json:"po_inventory"`
 }
+
+type UpdateSpoInputParams struct {
+	Spo SPOInputParams `json:"spo"`
+}
+
+type CancleSpoInputParams struct {
+	Spo SPOInputParams `json:"spo"`
+}
