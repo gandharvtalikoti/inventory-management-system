@@ -58,7 +58,7 @@ func DeleteSKU(sku_instance_id string) (bool, error) {
 	return true, nil
 }
 
-func createMPO(mpo models.MPOInputParams) (int, error) {
+func CreateMPO(mpo models.MPOInputParams) (int, error) {
 	query := `
     INSERT INTO MPO (pdf_filename, invoice_number, mpo_instance_id)
     VALUES ($1, $2, $3)
@@ -268,7 +268,7 @@ func createSPO(spoParams models.SPOparams) (int, error) {
 			InvoiceNumber:   spoParams.Mpo.InvoiceNumber,
 			Mpo_instance_id: spoParams.Mpo.Mpo_instance_id,
 		}
-		createdMPOID, err := createMPO(newMPO)
+		createdMPOID, err := CreateMPO(newMPO)
 		if err != nil {
 			fmt.Errorf("error creating MPO: %w", err)
 		}
@@ -417,7 +417,7 @@ func addSpo(addSpo models.AddNewSpoInputParams) (int, error) {
 	return spoID, nil
 }
 
-func cancelSpo(cancelSpoData models.CancleSpoInputParams) error {
+func CancelSPO(cancelSpoData models.CancleSpoInputParams) error {
 	// get spo from spo table using spo_instance_id
 	var spoID int
 	var currentStatus string
@@ -512,37 +512,37 @@ func main() {
 	// createMPO(newMPO)
 
 	//Create a SPO
-	// newSPO := models.SPOparams{
-	// 	Mpo: models.MPOInputParams{
-	// 		PDFFilename:     "invoice.pdf",
-	// 		InvoiceNumber:   "inv-123",
-	// 		Mpo_instance_id: "C1",
-	// 	},
-	// 	Spo: models.SPOInputParams{
-	// 		SpoInstanceId: "SPO-3",
-	// 		WarehouseID:   "W1",
-	// 		DOA:           time.Now(),
-	// 		Status:        "pending_reciept",
-	// 	},
-	// 	Po_inventory: []models.PurchaseOrderInventoryInputParams{
-	// 		{
-	// 			Sku_instance_id: "SKU-7",
-	// 			Qty:             800,
-	// 			Batch:           "BA17",
-	// 		},
-	// 		{
-	// 			Sku_instance_id: "SKU-8",
-	// 			Qty:             800,
-	// 			Batch:           "BA27",
-	// 		},
-	// 		{
-	// 			Sku_instance_id: "SKU-9",
-	// 			Qty:             800,
-	// 			Batch:           "BA37",
-	// 		},
-	// 	},
-	// }
-	// createSPO(newSPO)
+	newSPO := models.SPOparams{
+		Mpo: models.MPOInputParams{
+			PDFFilename:     "invoice.pdf",
+			InvoiceNumber:   "inv-123",
+			Mpo_instance_id: "C2",
+		},
+		Spo: models.SPOInputParams{
+			SpoInstanceId: "SPO-1",
+			WarehouseID:   "W1",
+			DOA:           time.Now(),
+			Status:        "pending_reciept",
+		},
+		Po_inventory: []models.PurchaseOrderInventoryInputParams{
+			{
+				Sku_instance_id: "SKU-",
+				Qty:             300,
+				Batch:           "BA17",
+			},
+			{
+				Sku_instance_id: "SKU-8",
+				Qty:             300,
+				Batch:           "BA27",
+			},
+			{
+				Sku_instance_id: "SKU-9",
+				Qty:             300,
+				Batch:           "BA37",
+			},
+		},
+	}
+	createSPO(newSPO)
 
 	// addNewSpoToExistingMpo := models.AddNewSpoInputParams{
 	// 	MpiInstanceId: "CARPET-456",
@@ -584,7 +584,7 @@ func main() {
 
 	// update spo
 	// updateSPOParams := models.UpdateSpoInputParams{
-	// 	SpoInstanceId: "SPO-2",
+	// 	SpoInstanceId: "SPO-4",
 	// 	WarehouseID:   "W1",
 	// 	DOA:           time.Now(),
 	// 	Status:        "in_stock",
