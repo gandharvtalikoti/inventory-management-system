@@ -41,5 +41,8 @@ type UpdateSpoInputParams struct {
 }
 
 type CancleSpoInputParams struct {
-	Spo SPOInputParams `json:"spo"`
+	SpoInstanceId string    `json:"spo_instance_id"`
+	WarehouseID   string    `json:"warehouse_id"`
+	DOA           time.Time `json:"doa"`
+	Status        string    `json:"status"`
 }

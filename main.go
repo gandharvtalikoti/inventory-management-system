@@ -411,21 +411,16 @@ func addSpo(addSpo models.AddNewSpoInputParams) (int, error) {
 func cancelSpo(cancelSpoData models.CancleSpoInputParams) error {
 	// get spo from spo table using spo_instance_id
 	var spoID int
-	err := database.DB.QueryRow("SELECT spo_id FROM SPO WHERE instance_id = $1", cancelSpoData.Spo.SpoInstanceId).Scan(&spoID)
+	err := database.DB.QueryRow("SELECT spo_id FROM SPO WHERE spo_instance_id = $1", cancelSpoData.SpoInstanceId).Scan(&spoID)
 	if err != nil {
 		_ = fmt.Errorf("error checking SPO existence: %w", err)
 	}
-	// using spoId get qty from po_inventory table and store it in memory
-	var qty int
-	err = database.DB.QueryRow("SELECT qty FROM PO_Inventory WHERE spo_id = $1", spoID).Scan(&qty)
-	if err != nil {
-		_ = fmt.Errorf("error checking PO_Inventory existence: %w", err)
-	}
 	if spoID == 0 {
 		// error message
-		fmt.Printf("SPO with instance ID %s does not exist\n", cancelSpoData.Spo.SpoInstanceId)
+		fmt.Printf("SPO with instance ID %s does not exist\n", cancelSpoData.SpoInstanceId)
 		return nil
-	}
+	}	
+
 	var pois []models.PurchaseOrderInventory
 	get_poInventory_query := `
 		SELECT poi_id, sku_id, spo_id, qty, batch
@@ -437,41 +432,43 @@ func cancelSpo(cancelSpoData models.CancleSpoInputParams) error {
 		log.Errorf("Error Getting Purchase Order Inventory: ", err)
 		return err
 	}
-
 	defer poInventoryRows.Close()
+
+	// get the po_inventory rows
 	for poInventoryRows.Next() {
 		var poi models.PurchaseOrderInventory
 		if err := poInventoryRows.Scan(&poi.POIID, &poi.SKUID, &poi.SPOID, &poi.Qty, &poi.Batch); err != nil {
 			log.Errorf("Error Getting Purchase Order Inventory Row: ", err)
 			return err
 		}
-
-		// update the qty in inventory table with the column name same as status
-		// get the status of the spo from spo table
-		var status string
-		err = database.DB.QueryRow("SELECT status FROM SPO WHERE spo_id = $1", spoID).Scan(&status)
-		if err != nil {
-
-			_ = fmt.Errorf("error checking SPO existence: %w", err)
-		}
-		// update the qty in inventory table with the column name same as status
-		// subtract the qty from the inventory table with the column name same as status
-		query := fmt.Sprintf("UPDATE inventory SET %s = %s - $1 WHERE sku_id = $2", status, status)
-		_, err = database.DB.Exec(query, qty, poi.SKUID)
-		if err != nil {
-			return fmt.Errorf("error updating inventory: %w", err)
-		}
-
-		// update the status to cancelled in spo table if not return error
-		u_query := `UPDATE SPO SET status = 'cancelled' WHERE AND spo_id = $1`
-		_, err = database.DB.Exec(u_query, spoID)
-		if err != nil {
-			return fmt.Errorf("error updating SPO: %w", err)
-		}
-
 		pois = append(pois, poi)
 	}
 
+	// get the status of the spo from spo table
+	var status string
+	err = database.DB.QueryRow("SELECT status FROM SPO WHERE spo_id = $1", spoID).Scan(&status)
+	if err != nil {
+		_ = fmt.Errorf("error checking SPO existence: %w", err)
+	}
+
+	// for every po_inventory row, update the qty in inventory table
+	for _, poi := range pois {
+		// update the qty in inventory table with the column name same as status
+		// subtract the qty from the inventory table with the column name same as status
+		query := fmt.Sprintf("UPDATE inventory SET %s = %s - $1 WHERE sku_id = $2", status, status)
+		_, err = database.DB.Exec(query, poi.Qty, poi.SKUID)
+		if err != nil {
+			return fmt.Errorf("error updating inventory: %w", err)
+		}
+	}
+
+
+	// update the status to cancelled in spo table if not return error
+	u_query := `UPDATE SPO SET status = 'cancelled' WHERE spo_id = $1`
+	_, err = database.DB.Exec(u_query, spoID)
+	if err != nil {
+		return fmt.Errorf("error updating SPO: %w", err)
+	}
 	return nil
 }
 
@@ -503,24 +500,24 @@ func main() {
 	// 		Mpo_instance_id: "C1",
 	// 	},
 	// 	Spo: models.SPOInputParams{
-	// 		SpoInstanceId: "SPO-3",
+	// 		SpoInstanceId: "SPO-5",
 	// 		WarehouseID:   "W5",
 	// 		DOA:           time.Now(),
 	// 		Status:        "pending_reciept",
 	// 	},
 	// 	Po_inventory: []models.PurchaseOrderInventoryInputParams{
 	// 		{
-	// 			Sku_instance_id: "SKU-4",
+	// 			Sku_instance_id: "SKU-1",
 	// 			Qty:             100,
 	// 			Batch:           "BA1",
 	// 		},
 	// 		{
-	// 			Sku_instance_id: "SKU-5",
+	// 			Sku_instance_id: "SKU-2",
 	// 			Qty:             100,
 	// 			Batch:           "BA2",
 	// 		},
 	// 		{
-	// 			Sku_instance_id: "SKU-6",
+	// 			Sku_instance_id: "SKU-3",
 	// 			Qty:             100,
 	// 			Batch:           "BA3",
 	// 		},
@@ -556,15 +553,16 @@ func main() {
 	// }
 	// addSpo(addNewSpoToExistingMpo)
 
-	// cancel spo
-	/// 	Spo: models.SPOInputParams{
-	// 		SpoInstanceId: "SPO-3",
-	// 		WarehouseID:   "W1",
-	// 		DOA:           time.Now(),
-	// 		Status:        "pending_reciept",
-	// 	}} cancelSpoData := models.CancleSpoInputParams{
+	//cancel spo
 
-	// cancelSpo(cancelSpoData)
+	cancelSpoData := models.CancleSpoInputParams{
+		SpoInstanceId: "SPO-3",
+		WarehouseID:   "W5",
+		DOA:           time.Now(),
+		Status:        "cancelled",
+	}
+
+	cancelSpo(cancelSpoData)
 
 	// CreateSKU("SKU-17")
 
