@@ -220,6 +220,20 @@ func UpdateSPO(updateSPOParams models.UpdateSpoInputParams) error {
 			}
 		}
 
+		if updateSPOParams.Status == "in_stock" {
+			// insert into transactions table for each sku
+			transactionQuery := `
+			INSERT INTO transactions (sku_id, spo_id, warehouse_id, qty ,batch, type, source, expiry_date)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+			`
+			_, err = database.DB.Exec(transactionQuery, poi.SKUID, poi.SPOID, updateSPOParams.WarehouseID, poi.Qty, poi.Batch, "plus", "source", time.Now())
+			if err != nil {
+				log.Errorf("Error inserting into transactions table: %v", err)
+				return err
+			}
+			fmt.Print("Inserted into transactions table\n")
+		}
+
 		//Change the status of the po to current status
 		if !updateSPO {
 			update_spo_query := `
@@ -234,23 +248,6 @@ func UpdateSPO(updateSPOParams models.UpdateSpoInputParams) error {
 			}
 		}
 
-
-		if updateSPOParams.Status == "in_stock" {
-			// insert into transactions table for each sku
-			transactionQuery := `
-			INSERT INTO transactions (sku_id, spo_id, warehouse_id, qty ,batch, type, source, expiry_date)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-			`
-			_, err = database.DB.Exec(transactionQuery, poi.SKUID, poi.SPOID, updateSPOParams.WarehouseID, poi.Qty, poi.Batch, "plus","source" ,time.Now())
-			if err != nil {
-				log.Errorf("Error inserting into transactions table: %v", err)
-				return err
-			}
-			fmt.Print("Inserted into transactions table\n")
-		}
-
-
-		
 	} // end for loop
 	return nil
 }
@@ -586,13 +583,13 @@ func main() {
 	// cancelSpo(cancelSpoData)
 
 	// update spo
-	updateSPOParams := models.UpdateSpoInputParams{
-		SpoInstanceId: "SPO-1",
-		WarehouseID:   "W1",
-		DOA:           time.Now(),
-		Status:        "in_stock",
-	}
+	// updateSPOParams := models.UpdateSpoInputParams{
+	// 	SpoInstanceId: "SPO-2",
+	// 	WarehouseID:   "W1",
+	// 	DOA:           time.Now(),
+	// 	Status:        "in_stock",
+	// }
 
-	UpdateSPO(updateSPOParams)
+	// UpdateSPO(updateSPOParams)
 
 }
