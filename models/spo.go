@@ -46,3 +46,12 @@ type CancleSpoInputParams struct {
 	DOA           time.Time `json:"doa"`
 	Status        string    `json:"status"`
 }
+
+type SKUToStock struct {
+	Qty         int    `json:"qty"`
+	WarehouseID string `json:"warehouse_id"`
+	BinID       string `json:"bin_id"`
+}
+type StockSpoInputParams struct {
+	StockSpoArray []SKUToStock `json:"sku_to_stock"`
+}
