@@ -1,0 +1,89 @@
+-- Database: inventory-sys
+
+-- DROP DATABASE IF EXISTS "inventory-sys";
+CREATE DATABASE "inventory-sys"
+    WITH
+    OWNER = postgres
+    ENCODING = 'UTF8'
+    LC_COLLATE = 'English_India.1252'
+    LC_CTYPE = 'English_India.1252'
+    LOCALE_PROVIDER = 'libc'
+    TABLESPACE = pg_default
+    CONNECTION LIMIT = -1
+    IS_TEMPLATE = False;
+
+
+CREATE TABLE MPO (
+    mpo_id SERIAL PRIMARY KEY,
+    pdf_filename VARCHAR(255),
+    invoice_number VARCHAR(255),
+    mpo_instance_id VARCHAR(255)
+);
+
+CREATE TABLE SPO (
+    spo_id SERIAL PRIMARY KEY,
+    mpo_id INT,
+    spo_instance_id VARCHAR(255),
+    warehouse_id VARCHAR(255),
+    doa DATE,
+    status VARCHAR(255),
+    FOREIGN KEY (mpo_id) REFERENCES MPO(mpo_id)
+);
+
+CREATE TABLE PO_Inventory (
+    poi_id SERIAL PRIMARY KEY,
+    sku_id INT,
+    spo_id INT,
+    qty INT,
+    batch VARCHAR(255),
+    FOREIGN KEY (spo_id) REFERENCES SPO(spo_id),
+	FOREIGN KEY (sku_id) REFERENCES SKU(sku_id)
+);
+
+CREATE TABLE SKU (
+    sku_id SERIAL PRIMARY KEY,
+    sku_instance_id VARCHAR(255)
+);
+
+
+CREATE TABLE Transactions (
+    tid SERIAL PRIMARY KEY,
+    sku_id INT,
+    spo_id INT,
+    so_id INT,
+    warehouse_id VARCHAR(255),
+    bin_id VARCHAR(255),
+    qty INT,
+    batch VARCHAR(255),
+    type VARCHAR(255),
+    source VARCHAR(255),
+    expiry_date DATE,
+    FOREIGN KEY (sku_id) REFERENCES SKU(sku_id),
+    FOREIGN KEY (spo_id) REFERENCES SPO(spo_id)
+);
+
+CREATE TABLE Inventory (
+    inv_id SERIAL PRIMARY KEY,
+    sku_id INT,
+    batch VARCHAR(255),
+    warehouse_id VARCHAR(255),
+    bin_id VARCHAR(255),
+    in_stock INT,
+    pending_reciept INT,
+    in_transit INT,
+    received INT,
+    quarantine INT,
+    committed INT,
+    reserved INT,
+    available INT,
+    damaged INT,
+	FOREIGN KEY (sku_id) REFERENCES SKU(sku_id)
+	
+);
+
+select * from mpo;
+
+select * from spo;
+
+
+truncate spo, mpo, inventory, transactions, po_inventory cascade; 
