@@ -471,7 +471,7 @@ func AddSPO(addSpo models.AddNewSpoInputParams) (int, error) {
 	// Insert into POI table
 	for _, poi := range addSpo.Po_inventory {
 		// get the sku_id from sku table using sku_instance_id, if not there print err
-		skuID := GetSKUId(poi.Sku_instance_id)
+		skuID := getSKUId(poi.Sku_instance_id)
 		fmt.Println("SKU ID: ", skuID)
 		// Insert into POI table
 		query := ` INSERT INTO PO_Inventory (sku_id,spo_id, qty, batch)
@@ -525,8 +525,6 @@ func AddSPO(addSpo models.AddNewSpoInputParams) (int, error) {
 	}
 	return spoID, nil
 }
-
-
 
 func CancelSPO(cancelSpoData models.SPO) error {
 	// get spo from spo table using spo_instance_id
@@ -647,7 +645,7 @@ func Stocking(input StockingParams) error {
 	if err != nil {
 		return fmt.Errorf("error updating inventory: %w", err)
 	}
-	
+
 	// update the status to in_stock in spo table if not return error
 	u_query := `UPDATE SPO SET status = 'in_stock' WHERE spo_instance_id = $1`
 	_, err = database.DB.Exec(u_query, input.SpoInstanceID)
@@ -659,16 +657,13 @@ func Stocking(input StockingParams) error {
 }
 
 func SplitSPO(splitSPOData models.SplitSPOInputParams) error {
+
 	//check if the mpo_instance_id exists in MPO table if not return error
 	var mpoID int
 	err := database.DB.QueryRow("SELECT mpo_id FROM MPO WHERE mpo_instance_id = $1", splitSPOData.MPOInstanceID).Scan(&mpoID)
 	if err != nil {
 		_ = fmt.Errorf("error checking MPO existence: %w", err)
-	}
-	if mpoID == 0 {
-		// error message
-		fmt.Printf("MPO with instance ID %s does not exist\n", splitSPOData.MPOInstanceID)
-		return nil
+		return err
 	}
 
 	// get spo from OldSPOInstanceID from SPO table
@@ -684,23 +679,25 @@ func SplitSPO(splitSPOData models.SplitSPOInputParams) error {
 		return fmt.Errorf("error cancelling SPO: %w", err)
 	}
 
-	// add spo to the mpo_instance_id
-	var addSpo models.AddNewSpoInputParams = models.AddNewSpoInputParams{
-		MpiInstanceId: splitSPOData.MPOInstanceID,
-		Spo: models.SPOInputParams{
-			SpoInstanceId: splitSPOData.OldSPOInstanceID,
-			WarehouseID:   OldSPO.WarehouseID,
-			DOA:           time.Now(),
-			Status:        OldSPO.Status,
-		},
-		Po_inventory: []models.PurchaseOrderInventoryInputParams{},
-	}
-
-	_, err = AddSPO(addSpo)
+	// get mpoid from mpo_instance_id
+	var mpoID int
+	err = database.DB.QueryRow("SELECT mpo_id FROM MPO WHERE mpo_instance_id = $1", splitSPOData.MPOInstanceID).Scan(&mpoID)
 	if err != nil {
-		return fmt.Errorf("error adding SPO: %w", err)
-
+		return fmt.Errorf("error getting MPO ID: %w", err)
 	}
+
+	// iterate through the splitspo array and call addSPO func
+	for _, spos := range splitSPOData.NewSpos {
+		// create new SPO
+		var spo models.AddNewSpoInputParams
+		spo.MpiInstanceId = splitSPOData.MPOInstanceID
+		spo.Spo = spos.Spo
+		_, err = AddSPO(spos)
+		if err != nil {
+			return fmt.Errorf("error adding SPO: %w", err)
+		}
+	}
+	return nil
 
 }
 
@@ -825,18 +822,17 @@ func main() {
 
 	// split spo
 
-	
-// type SplitSPO struct {
-// 	SPO SPOInputParams                      `json: spo`
-// 	SKU []PurchaseOrderInventoryInputParams `json:"sku"`
-// }
-// type SplitSPOInputParams struct {
-// 	MPOInstanceID    string     `json:"mpo_instance_id"`
-// 	OldSPOInstanceID string     `json:"old_spo_instance_id"`
-// 	SplitSPO         []SplitSPO `json:"split_spo"`
-// }
+	// type SplitSPO struct {
+	// 	SPO SPOInputParams                      `json: spo`
+	// 	SKU []PurchaseOrderInventoryInputParams `json:"sku"`
+	// }
+	// type SplitSPOInputParams struct {
+	// 	MPOInstanceID    string     `json:"mpo_instance_id"`
+	// 	OldSPOInstanceID string     `json:"old_spo_instance_id"`
+	// 	SplitSPO         []SplitSPO `json:"split_spo"`
+	// }
 	splitSPOData := models.SplitSPOInputParams{
-		MPOInstanceID: "MPO-1",
+		MPOInstanceID:    "MPO-1",
 		OldSPOInstanceID: "SPO-1",
 		SplitSPO: []models.SplitSPO{
 			{
@@ -878,10 +874,8 @@ func main() {
 						Batch:           "B4",
 					},
 				},
-
 			},
 		},
-		
 	}
 	SplitSPO(splitSPOData)
 }

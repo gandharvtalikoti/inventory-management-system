@@ -57,12 +57,12 @@ type StockSpoInputParams struct {
 	StockSpoArray []SKUToStock `json:"sku_to_stock"`
 }
 
-type SplitSPO struct {
+type NewSPOs struct {
 	SPO SPOInputParams                      `json: spo`
 	SKU []PurchaseOrderInventoryInputParams `json:"sku"`
 }
 type SplitSPOInputParams struct {
-	MPOInstanceID    string     `json:"mpo_instance_id"`
-	OldSPOInstanceID string     `json:"old_spo_instance_id"`
-	SplitSPO         []SplitSPO `json:"split_spo"`
+	MPOInstanceID    string                 `json:"mpo_instance_id"`
+	OldSPOInstanceID string                 `json:"old_spo_instance_id"`
+	NewSpos          []AddNewSpoInputParams `json:"new_spos"`
 }
