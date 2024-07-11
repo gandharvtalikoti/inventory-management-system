@@ -566,6 +566,46 @@ func GetSPO(spo_instance_id string) (models.SPO, error) {
 	return spo, nil
 }
 
+func GETPoInventories(spoID int) ([]models.PurchaseOrderInventory, error) {
+	query := `
+	SELECT poi_id, sku_id, spo_id, qty, batch
+	FROM po_inventory
+	WHERE spo_id = $1`
+
+	poInventoryRows, err := database.DB.Query(query, spoID)
+	if err != nil {
+		log.Errorf("Error Getting Purchase Order Inventory: ", err)
+		return nil, err
+	}
+
+	defer poInventoryRows.Close()
+
+	var pois []models.PurchaseOrderInventory
+	for poInventoryRows.Next() {
+		var poi models.PurchaseOrderInventory
+		if err := poInventoryRows.Scan(&poi.POIID, &poi.SKUID, &poi.SPOID, &poi.Qty, &poi.Batch); err != nil {
+			log.Errorf("Error Getting Purchase Order Inventory Row: ", err)
+			return nil, err
+		}
+		pois = append(pois, poi)
+	}
+	return pois, nil
+}
+
+func GETPoi(SKUId int, spoID int) (models.PurchaseOrderInventory, error) {
+	query := `
+	SELECT poi_id, sku_id, spo_id, qty, batch
+	FROM po_inventory
+	WHERE sku_id = $1 AND spo_id = $2`
+
+	var poi models.PurchaseOrderInventory
+	err := database.DB.QueryRow(query, SKUId, spoID).Scan(&poi.POIID, &poi.SKUID, &poi.SPOID, &poi.Qty, &poi.Batch)
+	if err != nil {
+		return models.PurchaseOrderInventory{}, fmt.Errorf("error getting POI: %w", err)
+	}
+	return poi, nil
+
+}
 
 func main() {
 	// Load the configuration
