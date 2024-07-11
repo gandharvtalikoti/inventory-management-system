@@ -42,10 +42,7 @@ type UpdateSpoInputParams struct {
 }
 
 type CancleSpoInputParams struct {
-	SpoInstanceId string    `json:"spo_instance_id"`
-	WarehouseID   string    `json:"warehouse_id"`
-	DOA           time.Time `json:"doa"`
-	Status        string    `json:"status"`
+	Spo SPOInputParams `json:"spo"`
 }
 
 type SKUToStock struct {
@@ -58,4 +55,14 @@ type SKUToStock struct {
 type StockSpoInputParams struct {
 	SpoInstanceId string       `json:"spo_instance_id"`
 	StockSpoArray []SKUToStock `json:"sku_to_stock"`
+}
+
+type SplitSPO struct {
+	SPO SPOInputParams                      `json: spo`
+	SKU []PurchaseOrderInventoryInputParams `json:"sku"`
+}
+type SplitSPOInputParams struct {
+	MPOInstanceID    string     `json:"mpo_instance_id"`
+	OldSPOInstanceID string     `json:"old_spo_instance_id"`
+	SplitSPO         []SplitSPO `json:"split_spo"`
 }
