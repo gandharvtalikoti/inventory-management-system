@@ -538,6 +538,21 @@ func StockSpo(stockSpoData models.StockSpoInputParams) error {
 	return nil
 }
 
+func GetSPOID(spo_instance_id string) int {
+	query:= `SELECT spo_id FROM SPO WHERE spo_instance_id = $1`
+	var spoID int
+	err := database.DB.QueryRow(query, spo_instance_id).Scan(&spoID)
+	if err != nil {
+		_ = fmt.Errorf("error checking SPO existence: %w", err)
+	}
+	if spoID == 0 {
+		// error message
+		fmt.Printf("SPO with instance ID %s does not exist\n", spo_instance_id)
+	}
+	return spoID
+}
+
+
 func main() {
 	// Load the configuration
 	if err := config.LoadConfig(); err != nil {
@@ -644,7 +659,7 @@ func main() {
 	stockSpoData := models.StockSpoInputParams{
 		StockSpoArray: []models.SKUToStock{
 			{
-				
+
 				Qty:         10,
 				WarehouseID: "W1",
 				BinID:       "B1",

@@ -36,6 +36,7 @@ type AddNewSpoInputParams struct {
 type UpdateSpoInputParams struct {
 	SpoInstanceId string    `json:"spo_instance_id"`
 	WarehouseID   string    `json:"warehouse_id"`
+	BinID         string    `json:"bin_id"`
 	DOA           time.Time `json:"doa"`
 	Status        string    `json:"status"`
 }
@@ -48,12 +49,13 @@ type CancleSpoInputParams struct {
 }
 
 type SKUToStock struct {
+	SpoInstanceId string `json:"spo_instance_id"`
 	SkuID         string `json:"sku_id"`
 	Qty           int    `json:"qty"`
 	WarehouseID   string `json:"warehouse_id"`
 	BinID         string `json:"bin_id"`
 }
 type StockSpoInputParams struct {
-	SpoInstanceId string `json:"spo_instance_id"`
+	SpoInstanceId string       `json:"spo_instance_id"`
 	StockSpoArray []SKUToStock `json:"sku_to_stock"`
 }
