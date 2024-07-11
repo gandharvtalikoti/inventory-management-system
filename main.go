@@ -533,6 +533,11 @@ func CancelSPO(cancelSpoData models.CancleSpoInputParams) error {
 	return nil
 }
 
+func StockSpo(stockSpoData models.StockSpoInputParams) error {
+
+	return nil
+}
+
 func main() {
 	// Load the configuration
 	if err := config.LoadConfig(); err != nil {
@@ -616,14 +621,14 @@ func main() {
 	// addSpo(addNewSpoToExistingMpo)
 
 	// cancel spo
-	cancelSpoData := models.CancleSpoInputParams{
-		SpoInstanceId: "SPO-1",
-		WarehouseID:   "W1",
-		DOA:           time.Now(),
-		Status:        "cancelled",
-	}
+	// cancelSpoData := models.CancleSpoInputParams{
+	// 	SpoInstanceId: "SPO-1",
+	// 	WarehouseID:   "W1",
+	// 	DOA:           time.Now(),
+	// 	Status:        "cancelled",
+	// }
 
-	CancelSPO(cancelSpoData)
+	// CancelSPO(cancelSpoData)
 
 	// update spo
 	// updateSPOParams := models.UpdateSpoInputParams{
@@ -634,5 +639,22 @@ func main() {
 	// }
 
 	// UpdateSPO(updateSPOParams)
+
+	// stock spo
+	stockSpoData := models.StockSpoInputParams{
+		StockSpoArray: []models.SKUToStock{
+			{
+				
+				Qty:         10,
+				WarehouseID: "W1",
+				BinID:       "B1",
+			},
+			{
+				Qty:         20,
+				WarehouseID: "W2",
+				BinID:       "B2",
+			},
+		}}
+	StockSpo(stockSpoData)
 
 }
