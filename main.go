@@ -552,6 +552,20 @@ func GetSPOID(spo_instance_id string) int {
 	return spoID
 }
 
+func GetSPO(spo_instance_id string) (models.SPO, error) {
+	query := `
+	SELECT spo_id, mpo_id, spo_instance_id, warehouse_id, doa, status
+	FROM SPO
+	WHERE spo_instance_id = $1`
+
+	var spo models.SPO // SPO to store the retrieved data
+	err := database.DB.QueryRow(query, spo_instance_id).Scan(&spo.SPOID, &spo.MPOID, &spo.SpoInstanceId, &spo.WarehouseID, &spo.DOA, &spo.Status)
+	if err != nil {
+		return models.SPO{}, fmt.Errorf("error getting SPO: %w", err)
+	}
+	return spo, nil
+}
+
 
 func main() {
 	// Load the configuration
