@@ -2,5 +2,5 @@ package models
 
 type SKU struct {
     SKUID        int `json:"sku_id"`
-    SKUEntityID  string `json:"sku_entity_id"`
+    SkuInstanceID  string `json:"sku_instance_id"`
 }

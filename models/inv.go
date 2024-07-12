@@ -1,6 +1,7 @@
 package models
 
 type Inventory struct {
+	InvID          int    `json:"inv_id"`
 	SKUID          int    `json:"sku_id"`
 	Batch          string `json:"batch"`
 	WarehouseID    string `json:"warehouse_id"`

@@ -3,6 +3,7 @@ package main
 import (
 	//"encoding/json"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"inventory-management-system/config"
 	"inventory-management-system/database"
@@ -488,7 +489,6 @@ func AddSPO(addSpo models.AddNewSpoInputParams) (int, error) {
          FROM inventory
          WHERE sku_id = $1 AND warehouse_id = $2 AND batch = $3
         `
-
 		existing_err := database.DB.QueryRow(existing_inv_query, skuID, addSpo.Spo.WarehouseID, poi.Batch).Scan(&invID)
 		if existing_err != nil {
 			if existing_err == sql.ErrNoRows {
@@ -692,6 +692,193 @@ func SplitSPO(splitSPOData models.SplitSPOInputParams) error {
 	return nil
 }
 
+// func to get rows in json format from the mpo table
+func getMPORows() (string, error) {
+	query := `
+	SELECT mpo_id, pdf_filename, invoice_number, mpo_instance_id
+	FROM MPO`
+
+	mpoRows, err := database.DB.Query(query)
+	if err != nil {
+		log.Errorf("Error Getting MPO Rows: ", err)
+		return "Error Getting MPO Rows", err
+	}
+	defer mpoRows.Close()
+
+	var mpos []models.MPO
+	for mpoRows.Next() {
+		var mpo models.MPO
+		if err := mpoRows.Scan(&mpo.MPOID, &mpo.PDFFilename, &mpo.InvoiceNumber, &mpo.Mpo_instance_id); err != nil {
+			log.Errorf("Error Getting MPO Row: ", err)
+			return "Error Getting MPO Row", err
+		}
+		mpos = append(mpos, mpo)
+	}
+	// convert mpos to indented json
+	mposJson, err := json.MarshalIndent(mpos, "", "  ")
+	if err != nil {
+		log.Errorf("Error converting MPO rows to JSON: ", err)
+		return "Error converting MPO rows to JSON", err
+	}
+	// fmt.Println("MPO Rows: ", string(mposJson))
+	return string(mposJson), nil
+}
+
+func getSPORows() (string, error) {
+	query := `
+	SELECT spo_id, mpo_id, spo_instance_id, warehouse_id, doa, status
+	FROM SPO`
+
+	spoRows, err := database.DB.Query(query)
+	if err != nil {
+		log.Errorf("Error Getting SPO Rows: ", err)
+		return "Error Getting SPO Rows", err
+	}
+	defer spoRows.Close()
+
+	var spos []models.SPO
+	for spoRows.Next() {
+		var spo models.SPO
+		if err := spoRows.Scan(&spo.SPOID, &spo.MPOID, &spo.SpoInstanceId, &spo.WarehouseID, &spo.DOA, &spo.Status); err != nil {
+			log.Errorf("Error Getting SPO Row: ", err)
+			return "Error Getting SPO Row", err
+		}
+		spos = append(spos, spo)
+	}
+	// convert spos to json
+	sposJson, err := json.MarshalIndent(spos,"", "  ")
+	if err != nil {
+		log.Errorf("Error converting SPO rows to JSON: ", err)
+		return "Error converting SPO rows to JSON", err
+	}
+	// fmt.Println("SPO Rows: ", string(sposJson))
+	return string(sposJson), nil
+}
+
+func getPOInventoryRows() (string, error) {
+	query := `
+	SELECT poi_id, sku_id, spo_id, qty, batch
+	FROM po_inventory`
+
+	poiRows, err := database.DB.Query(query)
+	if err != nil {
+		log.Errorf("Error Getting PO Inventory Rows: ", err)
+		return "Error Getting PO Inventory Rows", err
+	}
+	defer poiRows.Close()
+
+	var pois []models.PurchaseOrderInventory
+	for poiRows.Next() {
+		var poi models.PurchaseOrderInventory
+		if err := poiRows.Scan(&poi.POIID, &poi.SKUID, &poi.SPOID, &poi.Qty, &poi.Batch); err != nil {
+			log.Errorf("Error Getting PO Inventory Row: ", err)
+			return "Error Getting PO Inventory Row", err
+		}
+		pois = append(pois, poi)
+	}
+	// convert pois to json
+	poisJson, err := json.MarshalIndent(pois, "", "  ")
+	if err != nil {
+		log.Errorf("Error converting PO Inventory rows to JSON: ", err)
+		return "Error converting PO Inventory rows to JSON", err
+	}
+	// fmt.Println("PO Inventory Rows: ", string(poisJson))
+	return string(poisJson), nil
+}
+
+func getInventoryRows() (string, error) {
+	query := `
+	SELECT inv_id, sku_id, warehouse_id, batch, in_stock, pending_reciept, in_transit, received, quarantine, committed, reserved, available, damaged
+	FROM inventory`
+
+	invRows, err := database.DB.Query(query)
+	if err != nil {
+		log.Errorf("Error Getting Inventory Rows: ", err)
+		return "Error Getting Inventory Rows", err
+	}
+	defer invRows.Close()
+
+	var invs []models.Inventory
+	for invRows.Next() {
+		var inv models.Inventory
+		if err := invRows.Scan(&inv.InvID, &inv.SKUID, &inv.WarehouseID, &inv.Batch, &inv.InStock, &inv.PendingReceipt, &inv.InTransit, &inv.Received, &inv.Quarantine, &inv.Committed, &inv.Reserved, &inv.Available, &inv.Damaged); err != nil {
+			log.Errorf("Error Getting Inventory Row: ", err)
+			return "Error Getting Inventory Row", err
+		}
+		invs = append(invs, inv)
+	}
+	// convert invs to json
+	invsJson, err := json.MarshalIndent(invs, "", "  ")
+	if err != nil {
+		log.Errorf("Error converting Inventory rows to JSON: ", err)
+		return "Error converting Inventory rows to JSON", err
+	}
+	// fmt.Println("Inventory Rows: ", string(invsJson))
+	return string(invsJson), nil
+}
+
+func getSKURows() (string, error) {
+	query := `
+	SELECT sku_id, sku_instance_id
+	FROM sku`
+
+	skuRows, err := database.DB.Query(query)
+	if err != nil {
+		log.Errorf("Error Getting SKU Rows: ", err)
+		return "Error Getting SKU Rows", err
+	}
+	defer skuRows.Close()
+
+	var skus []models.SKU
+	for skuRows.Next() {
+		var sku models.SKU
+		if err := skuRows.Scan(&sku.SKUID, &sku.SkuInstanceID); err != nil {
+			log.Errorf("Error Getting SKU Row: ", err)
+			return "Error Getting SKU Row", err
+		}
+		skus = append(skus, sku)
+	}
+	// convert skus to json
+	skusJson, err := json.MarshalIndent(skus, "", "  ")
+	if err != nil {
+		log.Errorf("Error converting SKU rows to JSON: ", err)
+		return "Error converting SKU rows to JSON", err
+	}
+	// fmt.Println("SKU Rows: ", string(skusJson))
+	return string(skusJson), nil
+}
+
+func getTransactionsRows() (string, error) {
+	query := `
+	SELECT tid, sku_id, spo_id, warehouse_id, bin_id, qty, batch, type, source, expiry_date
+	FROM transactions`
+
+	transactionsRows, err := database.DB.Query(query)
+	if err != nil {
+		log.Errorf("Error Getting Transactions Rows: ", err)
+		return "Error Getting Transactions Rows", err
+	}
+	defer transactionsRows.Close()
+
+	var transactions []models.Transactions
+	for transactionsRows.Next() {
+		var transaction models.Transactions
+		if err := transactionsRows.Scan(&transaction.TID, &transaction.SKUID, &transaction.SPOID, &transaction.WarehouseID, &transaction.BinID, &transaction.Qty, &transaction.Batch, &transaction.Type, &transaction.Source, &transaction.ExpiryDate); err != nil {
+			log.Errorf("Error Getting Transactions Row: ", err)
+			return "Error Getting Transactions Row", err
+		}
+		transactions = append(transactions, transaction)
+	}
+	// convert transactions to json
+	transactionsJson, err := json.MarshalIndent(transactions, "", "  ")
+	if err != nil {
+		log.Errorf("Error converting Transactions rows to JSON: ", err)
+		return "Error converting Transactions rows to JSON", err
+	}
+	// fmt.Println("Transactions Rows: ", string(transactionsJson))
+	return string(transactionsJson), nil
+}
+
 func main() {
 	// Load the configuration
 	if err := config.LoadConfig(); err != nil {
@@ -720,31 +907,31 @@ func main() {
 	// 		Mpo_instance_id: "C1",
 	// 	},
 	// 	Spo: models.SPOInputParams{
-	// 		SpoInstanceId: "SPO-2",
+	// 		SpoInstanceId: "SPO-5",
 	// 		WarehouseID:   "W1",
 	// 		DOA:           time.Now(),
 	// 		Status:        "pending_reciept",
 	// 	},
 	// 	Po_inventory: []models.PurchaseOrderInventoryInputParams{
 	// 		{
-	// 			Sku_instance_id: "SKU-1",
+	// 			Sku_instance_id: "SKU-10",
 	// 			Qty:             111,
 	// 			Batch:           "BA88",
 	// 		},
 	// 		{
-	// 			Sku_instance_id: "SKU-3",
+	// 			Sku_instance_id: "SKU-11",
 	// 			Qty:             222,
 	// 			Batch:           "BA99",
 	// 		},
 	// 		{
-	// 			Sku_instance_id: "SKU-4",
+	// 			Sku_instance_id: "SKU-12",
 	// 			Qty:             333,
 	// 			Batch:           "BA10",
 	// 		},
 
 	// 	},
 	// }
-	// createSPO(newSPO)
+	// CreateMPOAndSPO(newSPO)
 
 	// addNewSpoToExistingMpo := models.AddNewSpoInputParams{
 	// 	MpoInstanceId: "CARPET-456",
@@ -812,63 +999,99 @@ func main() {
 	// Stocking()
 
 	// split spo
+	// splitSPOData := models.SplitSPOInputParams{
+	// 	MPOInstanceID:    "C1",
+	// 	OldSPOInstanceID: "SPO-3",
+	// 	NewSpos: []models.AddNewSpoInputParams{
+	// 		{
+	// 			Spo: models.SPOInputParams{
 
-	// type SplitSPO struct {
-	// 	SPO SPOInputParams                      `json: spo`
-	// 	SKU []PurchaseOrderInventoryInputParams `json:"sku"`
+	// 				SpoInstanceId: "SPO-9",
+	// 				WarehouseID:   "W1",
+	// 				DOA:           time.Now(),
+	// 				Status:        "pending_reciept",
+	// 			},
+	// 			Po_inventory: []models.PurchaseOrderInventoryInputParams{
+	// 				{
+	// 					Sku_instance_id: "SKU-99",
+	// 					Qty:             10,
+	// 					Batch:           "B1",
+	// 				},
+	// 				{
+	// 					Sku_instance_id: "SKU-90",
+	// 					Qty:             20,
+	// 					Batch:           "B2",
+	// 				},
+	// 			},
+	// 		},
+	// 		{
+	// 			Spo: models.SPOInputParams{
+	// 				SpoInstanceId: "SPO-10",
+	// 				WarehouseID:   "W1",
+	// 				DOA:           time.Now(),
+	// 				Status:        "pending_reciept",
+	// 			},
+	// 			Po_inventory: []models.PurchaseOrderInventoryInputParams{
+	// 				{
+	// 					Sku_instance_id: "SKU-80",
+	// 					Qty:             10,
+	// 					Batch:           "B1",
+	// 				},
+	// 				{
+	// 					Sku_instance_id: "SKU-96",
+	// 					Qty:             20,
+	// 					Batch:           "B2",
+	// 				},
+	// 			},
+	// 		},
+	// 	},
 	// }
-	// type SplitSPOInputParams struct {
-	// 	MPOInstanceID    string     `json:"mpo_instance_id"`
-	// 	OldSPOInstanceID string     `json:"old_spo_instance_id"`
-	// 	SplitSPO         []SplitSPO `json:"split_spo"`
+	// SplitSPO(splitSPOData)
+
+	// get mpo table rows 
+	// var mpoRows, mpo_row_err = getMPORows()
+	// if mpo_row_err != nil {
+	// 	fmt.Println("Error getting MPO rows: ", mpo_row_err)
 	// }
-	splitSPOData := models.SplitSPOInputParams{
-		MPOInstanceID:    "CARPET-456",
-		OldSPOInstanceID: "SPO-1",
-		NewSpos: []models.AddNewSpoInputParams{
-			{
-				Spo: models.SPOInputParams{
-					SpoInstanceId: "SPO-2",
-					WarehouseID:   "W1",
-					DOA:           time.Now(),
-					Status:        "pending_reciept",
-				},
-				Po_inventory: []models.PurchaseOrderInventoryInputParams{
-					{
-						Sku_instance_id: "SKU-1",
-						Qty:             10,
-						Batch:           "B1",
-					},
-					{
-						Sku_instance_id: "SKU-2",
-						Qty:             20,
-						Batch:           "B2",
-					},
-				},
-			},
-			{
-				Spo: models.SPOInputParams{
-					SpoInstanceId: "SPO-2",
-					WarehouseID:   "W1",
-					DOA:           time.Now(),
-					Status:        "pending_reciept",
-				},
-				Po_inventory: []models.PurchaseOrderInventoryInputParams{
-					{
-						Sku_instance_id: "SKU-1",
-						Qty:             10,
-						Batch:           "B1",
-					},
-					{
-						Sku_instance_id: "SKU-2",
-						Qty:             20,
-						Batch:           "B2",
-					},
-				},
-			},
-		},
+	// fmt.Println("MPO Rows: ", mpoRows)
+	
+
+	// get spo table rows
+	// var spoRows, spo_rows_error = getSPORows()
+	// if spo_rows_error != nil {
+	// 	fmt.Println("Error getting SPO rows: ", spo_rows_error)
+	// }
+	// fmt.Println("SPO Rows: ", spoRows)
+
+	// get po_inventory rows
+	// var poInventoryRows, poInventoryRowsErr = getPOInventoryRows()
+	// if poInventoryRowsErr != nil {
+	// 	fmt.Println("Error getting PO Inventory rows: ", poInventoryRowsErr)
+	// }
+	// fmt.Println("PO Inventory Rows: ", poInventoryRows)
+
+	// get inventory rows
+	// var inventoryRows, inventoryRowsErr = getInventoryRows()
+	// if inventoryRowsErr != nil {
+	// 	fmt.Println("Error getting Inventory rows: ", inventoryRowsErr)
+	// }
+	// fmt.Println("Inventory Rows: ", inventoryRows)
+
+	// get sku rows
+	var skuRows, skuRowsErr = getSKURows()
+	if skuRowsErr != nil {
+		fmt.Println("Error getting SKU rows: ", skuRowsErr)
 	}
-			
+	fmt.Println("SKU Rows: ", skuRows)
 
-	SplitSPO(splitSPOData)
+
+	// get transactions rows
+	var transactionsRows, transactionsRowsErr = getTransactionsRows()
+	if transactionsRowsErr != nil {
+		fmt.Println("Error getting Transactions rows: ", transactionsRowsErr)
+	}
+	fmt.Println("Transactions Rows: ", transactionsRows)
+
+
+
 }

@@ -2,7 +2,7 @@ package models
 
 import "time"
 
-type Transaction struct {
+type Transactions struct {
 	TID         int       `json:"tid"`
 	SKUID       int       `json:"sku_id"`
 	SPOID       int       `json:"spo_id"`
