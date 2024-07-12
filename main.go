@@ -612,6 +612,10 @@ type StockingParams struct {
 	Qty            int
 }
 
+func StockingSKU(splitSKUParams models.StockSKUInputParams){
+	
+}
+
 func Stocking(input StockingParams) error {
 	// get the curr qty from inventory row
 	var currQty int

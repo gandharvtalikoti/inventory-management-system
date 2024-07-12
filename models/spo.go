@@ -66,3 +66,20 @@ type SplitSPOInputParams struct {
 	OldSPOInstanceID string                 `json:"old_spo_instance_id"`
 	NewSpos          []AddNewSpoInputParams `json:"new_spos"`
 }
+
+
+// stocking skus to bins
+type StockSKUBinParams struct {
+	SkuInstanceID string `json:"sku_instance_id"`
+	WarehouseID   string `json:"warehouse_id"`
+	BinID         string `json:"bin_id"`
+	Qty           int    `json:"qty"`
+	Batch		 string `json:"batch"`
+}
+
+type StockSKUInputParams  struct {
+	SpoInstanceID string `json:"spo_instance_id"`
+	SKUBinParams []StockSKUBinParams `json:"sku_bin_params"`
+}
+
+
