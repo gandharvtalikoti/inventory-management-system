@@ -375,7 +375,7 @@ func CreateMPOAndSPO(spoParams models.SPOparams) (int, error) {
 	// Insert into POI table
 	for _, poi := range spoParams.Po_inventory {
 		// get the sku_id from sku table using sku_instance_id, if not there print err
-		skuID := GetSKUId(poi.Sku_instance_id)
+		skuID := getSKUId(poi.Sku_instance_id)
 		fmt.Println("SKU ID: ", skuID)
 		// Insert into POI table
 		query := `
@@ -446,13 +446,13 @@ func AddSPO(addSpo models.AddNewSpoInputParams) (int, error) {
 	// Check if mpo_id in models.SPO is present in MPO table
 	fmt.Println("check addSpo")
 	var mpoId int
-	err := database.DB.QueryRow("SELECT mpo_id FROM MPO WHERE mpo_instance_id = $1", addSpo.MpiInstanceId).Scan(&mpoId)
+	err := database.DB.QueryRow("SELECT mpo_id FROM MPO WHERE mpo_instance_id = $1", addSpo.MpoInstanceId).Scan(&mpoId)
 	if err != nil {
 		_ = fmt.Errorf("error checking MPO existence: %w", err)
 	}
 	fmt.Printf("MPO ID: %d\n", mpoId)
 	if mpoId == 0 {
-		fmt.Println("MPO with instance ID does not exist", addSpo.MpiInstanceId)
+		fmt.Println("MPO with instance ID does not exist", addSpo.MpoInstanceId)
 		return 0, nil
 	}
 	// if mpo_id exists while creating spo exists in mpo table then create SPO with the mpo_id and insert into SPO table
@@ -657,7 +657,6 @@ func Stocking(input StockingParams) error {
 }
 
 func SplitSPO(splitSPOData models.SplitSPOInputParams) error {
-
 	//check if the mpo_instance_id exists in MPO table if not return error
 	var mpoID int
 	err := database.DB.QueryRow("SELECT mpo_id FROM MPO WHERE mpo_instance_id = $1", splitSPOData.MPOInstanceID).Scan(&mpoID)
@@ -679,26 +678,18 @@ func SplitSPO(splitSPOData models.SplitSPOInputParams) error {
 		return fmt.Errorf("error cancelling SPO: %w", err)
 	}
 
-	// get mpoid from mpo_instance_id
-	var mpoID int
-	err = database.DB.QueryRow("SELECT mpo_id FROM MPO WHERE mpo_instance_id = $1", splitSPOData.MPOInstanceID).Scan(&mpoID)
-	if err != nil {
-		return fmt.Errorf("error getting MPO ID: %w", err)
-	}
-
 	// iterate through the splitspo array and call addSPO func
 	for _, spos := range splitSPOData.NewSpos {
 		// create new SPO
-		var spo models.AddNewSpoInputParams
-		spo.MpiInstanceId = splitSPOData.MPOInstanceID
-		spo.Spo = spos.Spo
-		_, err = AddSPO(spos)
+		var new_spo models.AddNewSpoInputParams
+		new_spo.MpoInstanceId = splitSPOData.MPOInstanceID
+		new_spo.Spo = spos.Spo
+		_, err = AddSPO(new_spo)
 		if err != nil {
 			return fmt.Errorf("error adding SPO: %w", err)
 		}
 	}
 	return nil
-
 }
 
 func main() {
@@ -756,7 +747,7 @@ func main() {
 	// createSPO(newSPO)
 
 	// addNewSpoToExistingMpo := models.AddNewSpoInputParams{
-	// 	MpiInstanceId: "CARPET-456",
+	// 	MpoInstanceId: "CARPET-456",
 	// 	Spo: models.SPOInputParams{
 	// 		SpoInstanceId: "SPo",
 	// 		WarehouseID:   "W12345",
@@ -832,17 +823,17 @@ func main() {
 	// 	SplitSPO         []SplitSPO `json:"split_spo"`
 	// }
 	splitSPOData := models.SplitSPOInputParams{
-		MPOInstanceID:    "MPO-1",
+		MPOInstanceID:    "CARPET-456",
 		OldSPOInstanceID: "SPO-1",
-		SplitSPO: []models.SplitSPO{
+		NewSpos: []models.AddNewSpoInputParams{
 			{
-				SPO: models.SPOInputParams{
+				Spo: models.SPOInputParams{
 					SpoInstanceId: "SPO-2",
 					WarehouseID:   "W1",
 					DOA:           time.Now(),
 					Status:        "pending_reciept",
 				},
-				SKU: []models.PurchaseOrderInventoryInputParams{
+				Po_inventory: []models.PurchaseOrderInventoryInputParams{
 					{
 						Sku_instance_id: "SKU-1",
 						Qty:             10,
@@ -856,26 +847,28 @@ func main() {
 				},
 			},
 			{
-				SPO: models.SPOInputParams{
-					SpoInstanceId: "SPO-3",
-					WarehouseID:   "W2",
+				Spo: models.SPOInputParams{
+					SpoInstanceId: "SPO-2",
+					WarehouseID:   "W1",
 					DOA:           time.Now(),
 					Status:        "pending_reciept",
 				},
-				SKU: []models.PurchaseOrderInventoryInputParams{
+				Po_inventory: []models.PurchaseOrderInventoryInputParams{
 					{
-						Sku_instance_id: "SKU-3",
-						Qty:             30,
-						Batch:           "B3",
+						Sku_instance_id: "SKU-1",
+						Qty:             10,
+						Batch:           "B1",
 					},
 					{
-						Sku_instance_id: "SKU-4",
-						Qty:             40,
-						Batch:           "B4",
+						Sku_instance_id: "SKU-2",
+						Qty:             20,
+						Batch:           "B2",
 					},
 				},
 			},
 		},
 	}
+			
+
 	SplitSPO(splitSPOData)
 }
