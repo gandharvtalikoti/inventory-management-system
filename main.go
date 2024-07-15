@@ -102,7 +102,7 @@ func getSKUId(sku_instance_id string) (int, error) {
 
 func getMPO(mpoID int) (models.MPO, error) {
 	query := `
-    SELECT mpo_id, pdf_filename, invoice_number, mpoinstanceid
+    SELECT mpo_id, pdf_filename, invoice_number, mpo_instance_id
     FROM MPO
     WHERE mpo_id = $1`
 
@@ -251,7 +251,7 @@ func CreateMPO(mpo models.MPOInputParams, commit bool) (int, error) {
 
 	}()
 	query := `
-    INSERT INTO MPO (pdf_filename, invoice_number, mpoinstanceid)
+    INSERT INTO MPO (pdf_filename, invoice_number, mpo_instance_id)
     VALUES ($1, $2, $3)
     RETURNING mpo_id`
 
@@ -478,7 +478,7 @@ func CreateMPOAndSPO(spoParams models.SPOparams, commit bool) (int, error) {
 	// Check if mpo_id in models.SPO is present in MPO table
 	fmt.Println("create mpo check")
 	var mpoId int
-	get_mpo_err := tx.QueryRow("SELECT mpo_id FROM MPO WHERE mpoinstanceid = $1", spoParams.Mpo.MPOInstanceID).Scan(&mpoId)
+	get_mpo_err := tx.QueryRow("SELECT mpo_id FROM MPO WHERE mpo_instance_id = $1", spoParams.Mpo.MPOInstanceID).Scan(&mpoId)
 	if get_mpo_err != nil {
 		_ = fmt.Errorf("error checking MPO existence: %w", get_mpo_err)
 	}
@@ -535,7 +535,7 @@ func CreateMPOAndSPO(spoParams models.SPOparams, commit bool) (int, error) {
 		if existing_inv_err != nil {
 			if existing_inv_err == sql.ErrNoRows {
 				// insert into inventory table
-				insert_inv_query := `INSERT INTO inventory (sku_id, warehouse_id, batch, pending_reciept) VALUES ($1, $2, $3, $4)`
+				insert_inv_query := `INSERT INTO inventory (sku_id, warehouse_id, batch, pending_reciept, in_stock, in_transit, received, quarantine, committed, reserved, available, damaged, bin_id) VALUES ($1, $2, $3, $4, 0,0,0,0,0,0,0,0,'')`
 				_, insert_inv_err := tx.Exec(insert_inv_query, skuID, spoParams.Spo.WarehouseID, poi.Batch, poi.Qty)
 				if insert_inv_err != nil {
 					fmt.Errorf("error creating inventory: %w", insert_inv_err)
@@ -654,7 +654,7 @@ func AddSPO(addSpo models.AddNewSpoInputParams, commit bool) (int, error) {
 	// Check if mpo_id in models.SPO is present in MPO table
 	fmt.Println("check addSpo")
 	var mpoId int
-	get_mpo_err := tx.QueryRow("SELECT mpo_id FROM MPO WHERE mpoinstanceid = $1", addSpo.MpoInstanceId).Scan(&mpoId)
+	get_mpo_err := tx.QueryRow("SELECT mpo_id FROM MPO WHERE mpo_instance_id = $1", addSpo.MpoInstanceId).Scan(&mpoId)
 	if get_mpo_err != nil {
 		_ = fmt.Errorf("error checking MPO existence: %w", get_mpo_err)
 	}
@@ -1066,7 +1066,7 @@ func StockingSKU(splitSKUParams models.StockSKUInputParams, commit bool) error {
 // func to get rows in json format from the mpo table
 func getMPORows() (string, error) {
 	query := `
-	SELECT mpo_id, pdf_filename, invoice_number, mpoinstanceid
+	SELECT mpo_id, pdf_filename, invoice_number, mpo_instance_id
 	FROM MPO`
 
 	mpoRows, err := database.DB.Query(query)
@@ -1262,47 +1262,46 @@ func main() {
 	}
 	defer database.CloseDatabase()
 
-	newMPO := models.MPOInputParams{
-		PDFFilename:     "carpet456.pdf",
-		InvoiceNumber:   "INV-456",
-		MPOInstanceID: "CARPET-456",
-	}
-	// Create a new MPO
-	CreateMPO(newMPO, true)
+	// newMPO := models.MPOInputParams{
+	// 	PDFFilename:   "yo_invoice.pdf",
+	// 	InvoiceNumber: "aa-11",
+	// 	MPOInstanceID: "C88",
+	// }
+	// // Create a new MPO
+	// CreateMPO(newMPO, false)
 
 	// Create a SPO
-	// newSPO := models.SPOparams{
-	// 	Mpo: models.MPOInputParams{
-	// 		PDFFilename:     "invoice.pdf",
-	// 		InvoiceNumber:   "inv-123",
-	// 		MPOInstanceID: "C1",
-	// 	},
-	// 	Spo: models.SPOInputParams{
-	// 		SpoInstanceId: "SPO-2",
-	// 		WarehouseID:   "W1",
-	// 		DOA:           time.Now(),
-	// 		Status:        "pending_reciept",
-	// 	},
-	// 	Po_inventory: []models.PurchaseOrderInventoryInputParams{
-	// 		{
-	// 			Sku_instance_id: "SKU-10",
-	// 			Qty:             111,
-	// 			Batch:           "BA878",
-	// 		},
-	// 		{
-	// 			Sku_instance_id: "SKU-20",
-	// 			Qty:             222,
-	// 			Batch:           "BA99",
-	// 		},
-	// 		{
-	// 			Sku_instance_id: "SKU-30",
-	// 			Qty:             333,
-	// 			Batch:           "BA10",
-	// 		},
-
-	// 	},
-	// }
-	// CreateMPOAndSPO(newSPO)
+	newSPO := models.SPOparams{
+		Mpo: models.MPOInputParams{
+			PDFFilename:   "inv.pdf",
+			InvoiceNumber: "inv-123",
+			MPOInstanceID: "C1",
+		},
+		Spo: models.SPOInputParams{
+			SpoInstanceId: "SPO-2",
+			WarehouseID:   "W1",
+			DOA:           time.Now(),
+			Status:        "pending_reciept",
+		},
+		Po_inventory: []models.PurchaseOrderInventoryInputParams{
+			{
+				Sku_instance_id: "SKU-1",
+				Qty:             111,
+				Batch:           "BA878",
+			},
+			{
+				Sku_instance_id: "SKU-2",
+				Qty:             222,
+				Batch:           "BA99",
+			},
+			{
+				Sku_instance_id: "SKU-3",
+				Qty:             333,
+				Batch:           "BA10",
+			},
+		},
+	}
+	CreateMPOAndSPO(newSPO, true)
 
 	// addNewSpoToExistingMpo := models.AddNewSpoInputParams{
 	// 	MpoInstanceId: "CARPET-456",
@@ -1462,7 +1461,5 @@ func main() {
 	// fmt.Println("Transactions Rows: ", transactionsRows)
 
 	// Stocking sku
-
-
 
 }
