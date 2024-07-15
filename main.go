@@ -346,7 +346,7 @@ func UpdateSPO(updateSPOParams models.UpdateSpoInputParams, commit bool) error {
 
 	//Get and Update Inventory for each SKU's
 	get_inventory_query := `
-    SELECT inv_id, sku_id, batch, warehouse_id, bin_id, in_stock, pending_reciept, in_transit, received, quarantine, committed, reserved, available, damaged
+    SELECT inv_id, sku_id, batch, warehouse_id, bin_id, in_stock, pending_receipt, in_transit, received, quarantine, committed, reserved, available, damaged
               FROM inventory
               WHERE sku_id = $1 AND batch = $2 AND warehouse_id = $3
     `
@@ -535,7 +535,7 @@ func CreateMPOAndSPO(spoParams models.SPOparams, commit bool) (int, error) {
 		if existing_inv_err != nil {
 			if existing_inv_err == sql.ErrNoRows {
 				// insert into inventory table
-				insert_inv_query := `INSERT INTO inventory (sku_id, warehouse_id, batch, pending_reciept, in_stock, in_transit, received, quarantine, committed, reserved, available, damaged, bin_id) 
+				insert_inv_query := `INSERT INTO inventory (sku_id, warehouse_id, batch, pending_receipt, in_stock, in_transit, received, quarantine, committed, reserved, available, damaged, bin_id) 
 				VALUES ($1, $2, $3, $4, 0,0,0,0,0,0,0,0,'')`
 				_, insert_inv_err := tx.Exec(insert_inv_query, skuID, spoParams.Spo.WarehouseID, poi.Batch, poi.Qty)
 				if insert_inv_err != nil {
@@ -550,7 +550,7 @@ func CreateMPOAndSPO(spoParams models.SPOparams, commit bool) (int, error) {
 			// update the inventory table
 			updateQuery := `
         UPDATE inventory
-        SET pending_reciept = pending_reciept + $1
+        SET pending_receipt = pending_receipt + $1
         WHERE inv_id = $2`
 			_, err = tx.Exec(updateQuery, poi.Qty, invID)
 			if err != nil {
@@ -1159,7 +1159,7 @@ func getPOInventoryRows() (string, error) {
 
 func getInventoryRows() (string, error) {
 	query := `
-	SELECT inv_id, sku_id, warehouse_id, batch, in_stock, pending_reciept, in_transit, received, quarantine, committed, reserved, available, damaged
+	SELECT inv_id, sku_id, warehouse_id, batch, in_stock, pending_receipt, in_transit, received, quarantine, committed, reserved, available, damaged
 	FROM inventory`
 
 	invRows, err := database.DB.Query(query)
@@ -1281,7 +1281,7 @@ func main() {
 			SpoInstanceId: "SPO-2",
 			WarehouseID:   "W1",
 			DOA:           time.Now(),
-			Status:        "pending_reciept",
+			Status:        "pending_receipt",
 		},
 		Po_inventory: []models.PurchaseOrderInventoryInputParams{
 			{
@@ -1379,7 +1379,7 @@ func main() {
 	// 				SpoInstanceId: "SPO-9",
 	// 				WarehouseID:   "W1",
 	// 				DOA:           time.Now(),
-	// 				Status:        "pending_reciept",
+	// 				Status:        "pending_receipt",
 	// 			},
 	// 			Po_inventory: []models.PurchaseOrderInventoryInputParams{
 	// 				{
@@ -1399,7 +1399,7 @@ func main() {
 	// 				SpoInstanceId: "SPO-10",
 	// 				WarehouseID:   "W1",
 	// 				DOA:           time.Now(),
-	// 				Status:        "pending_reciept",
+	// 				Status:        "pending_receipt",
 	// 			},
 	// 			Po_inventory: []models.PurchaseOrderInventoryInputParams{
 	// 				{
