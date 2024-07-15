@@ -535,7 +535,8 @@ func CreateMPOAndSPO(spoParams models.SPOparams, commit bool) (int, error) {
 		if existing_inv_err != nil {
 			if existing_inv_err == sql.ErrNoRows {
 				// insert into inventory table
-				insert_inv_query := `INSERT INTO inventory (sku_id, warehouse_id, batch, pending_reciept, in_stock, in_transit, received, quarantine, committed, reserved, available, damaged, bin_id) VALUES ($1, $2, $3, $4, 0,0,0,0,0,0,0,0,'')`
+				insert_inv_query := `INSERT INTO inventory (sku_id, warehouse_id, batch, pending_reciept, in_stock, in_transit, received, quarantine, committed, reserved, available, damaged, bin_id) 
+				VALUES ($1, $2, $3, $4, 0,0,0,0,0,0,0,0,'')`
 				_, insert_inv_err := tx.Exec(insert_inv_query, skuID, spoParams.Spo.WarehouseID, poi.Batch, poi.Qty)
 				if insert_inv_err != nil {
 					fmt.Errorf("error creating inventory: %w", insert_inv_err)
@@ -595,7 +596,6 @@ func deleteSPO(SpoInstanceId string, commit bool) (bool, error) {
 
 // The function `deleteSku` deletes a SKU from the database based on the provided SKU instance ID.
 func deleteSku(sku_instance_id string, commit bool) (bool, error) {
-
 	tx, err := database.DB.Begin()
 	if err != nil {
 		log.Errorf("Error starting transaction")
