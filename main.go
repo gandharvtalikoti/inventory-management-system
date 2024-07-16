@@ -393,7 +393,7 @@ func UpdateSPO(updateSPOParams models.UpdateSpoInputParams, commit bool) error {
 			}
 			//Add the value to the new row entry
 			insertQuery := fmt.Sprintf(`
-                INSERT INTO inventory (sku_id, warehouse_id, batch, %s) 
+                INSERT INTO inventory (sku_id, warehouse_id, batch, %s)
                 VALUES ($1, $2, $3, $4)
             `, updateSPOParams.Status)
 
@@ -405,7 +405,7 @@ func UpdateSPO(updateSPOParams models.UpdateSpoInputParams, commit bool) error {
 
 		} else { //If the warehouse is same then update the qty in the same row
 			update_inventory_query := fmt.Sprintf(`UPDATE inventory
-        SET 
+        SET
             %s = COALESCE(%s, 0) + $4,
         %s = COALESCE(%s, 0) - $5
         WHERE sku_id = $1 AND batch = $2 AND warehouse_id = $3;`, updateSPOParams.Status, updateSPOParams.Status, CurrentStatus, CurrentStatus)
@@ -535,7 +535,7 @@ func CreateMPOAndSPO(spoParams models.SPOparams, commit bool) (int, error) {
 		if existing_inv_err != nil {
 			if existing_inv_err == sql.ErrNoRows {
 				// insert into inventory table
-				insert_inv_query := `INSERT INTO inventory (sku_id, warehouse_id, batch, pending_receipt, in_stock, in_transit, received, quarantine, committed, reserved, available, damaged, bin_id) 
+				insert_inv_query := `INSERT INTO inventory (sku_id, warehouse_id, batch, pending_receipt, in_stock, in_transit, received, quarantine, committed, reserved, available, damaged, bin_id)
 				VALUES ($1, $2, $3, $4, 0,0,0,0,0,0,0,0,'')`
 				_, insert_inv_err := tx.Exec(insert_inv_query, skuID, spoParams.Spo.WarehouseID, poi.Batch, poi.Qty)
 				if insert_inv_err != nil {
@@ -989,7 +989,7 @@ func StockingSKU(splitSKUParams models.StockSKUInputParams, commit bool) error {
 		//Add New
 		if invID == 0 {
 			inventoryInsert_query := `
-			INSERT INTO inventory (sku_id, batch, warehouse_id, bin_id, in_stock) 
+			INSERT INTO inventory (sku_id, batch, warehouse_id, bin_id, in_stock)
 			VALUES ($1, $2, $3, $4, $5)
 			`
 
@@ -1250,6 +1250,53 @@ func getTransactionsRows() (string, error) {
 	return string(transactionsJson), nil
 }
 
+
+type poisBySkuIDs struct {
+	SKUID int
+	POIs  []POIBySKUID
+}
+
+type POIBySKUID struct {
+	POIID int
+	SPOID int
+	Qty   int
+	Batch string
+}
+func getPOIBySKUID(SKUIDs[] int) (string, error) {
+	get_poi_for_sku_id := `
+	SELECT poi_id, spo_id, qty, batch
+	FROM po_inventory
+	WHERE sku_id = $1`
+
+	var poisBySkuID []poisBySkuIDs
+	for _, skuID := range SKUIDs {
+		poiRows, err := database.DB.Query(get_poi_for_sku_id, skuID)
+		if err != nil {
+			log.Errorf("Error Getting PO Inventory Rows: ", err)
+			return "Error Getting PO Inventory Rows", err
+		}
+		defer poiRows.Close()
+		var pois []POIBySKUID
+		for poiRows.Next() {
+			var poi POIBySKUID
+			if err := poiRows.Scan(&poi.POIID, &poi.SPOID, &poi.Qty, &poi.Batch); err != nil {
+				log.Errorf("Error Getting PO Inventory Row: ", err)
+				return "Error Getting PO Inventory Row", err
+			}
+			pois = append(pois, poi)
+		}
+		poisBySkuID = append(poisBySkuID, poisBySkuIDs{SKUID: skuID, POIs: pois})
+	}
+	// convert poisBySkuID to json
+	poisBySkuIDJson, err := json.MarshalIndent(poisBySkuID, "", "  ")
+	if err != nil {
+		log.Errorf("Error converting PO Inventory rows to JSON: ", err)
+		return "Error converting PO Inventory rows to JSON", err
+	}
+	// fmt.Println("PO Inventory Rows: ", string(poisBySkuIDJson))
+	return string(poisBySkuIDJson), nil
+}
+
 func main() {
 	// Load the configuration
 	if err := config.LoadConfig(); err != nil {
@@ -1271,37 +1318,33 @@ func main() {
 	// CreateMPO(newMPO, false)
 
 	// Create a SPO
-	newSPO := models.SPOparams{
-		Mpo: models.MPOInputParams{
-			PDFFilename:   "inv.pdf",
-			InvoiceNumber: "inv-123",
-			MPOInstanceID: "C1",
-		},
-		Spo: models.SPOInputParams{
-			SpoInstanceId: "SPO-2",
-			WarehouseID:   "W1",
-			DOA:           time.Now(),
-			Status:        "pending_receipt",
-		},
-		Po_inventory: []models.PurchaseOrderInventoryInputParams{
-			{
-				Sku_instance_id: "SKU-1",
-				Qty:             111,
-				Batch:           "BA878",
-			},
-			{
-				Sku_instance_id: "SKU-2",
-				Qty:             222,
-				Batch:           "BA99",
-			},
-			{
-				Sku_instance_id: "SKU-3",
-				Qty:             333,
-				Batch:           "BA10",
-			},
-		},
-	}
-	CreateMPOAndSPO(newSPO, true)
+	// newSPO := models.SPOparams{
+	// 	Mpo: models.MPOInputParams{
+	// 		PDFFilename:   "inv.pdf",
+	// 		InvoiceNumber: "inv-123",
+	// 		MPOInstanceID: "C5",
+	// 	},
+	// 	Spo: models.SPOInputParams{
+	// 		SpoInstanceId: "SPO-1",
+	// 		WarehouseID:   "W2",
+	// 		DOA:           time.Now(),
+	// 		Status:        "pending_receipt",
+	// 	},
+	// 	Po_inventory: []models.PurchaseOrderInventoryInputParams{
+	// 		{
+	// 			Sku_instance_id: "SKU-8",
+	// 			Qty:             111,
+	// 			Batch:           "BA878",
+	// 		},
+	// 		{
+	// 			Sku_instance_id: "SKU-9",
+	// 			Qty:             222,
+	// 			Batch:           "BA99",
+	// 		},
+			
+	// 	},
+	// }
+	// CreateMPOAndSPO(newSPO, true)
 
 	// addNewSpoToExistingMpo := models.AddNewSpoInputParams{
 	// 	MpoInstanceId: "CARPET-456",
@@ -1462,4 +1505,30 @@ func main() {
 
 	// Stocking sku
 
+	// CreateSKU("SKU-1", true)
+	// CreateSKU("SKU-2", true)
+	// CreateSKU("SKU-3", true)
+	// CreateSKU("SKU-4", true)
+	// CreateSKU("SKU-5", true)
+	// CreateSKU("SKU-6", true)
+	// CreateSKU("SKU-7", true)
+	// CreateSKU("SKU-8", true)
+	// CreateSKU("SKU-9", true)
+	// CreateSKU("SKU-10", true)
+	// CreateSKU("SKU-11", true)
+	// CreateSKU("SKU-12", true)
+	// CreateSKU("SKU-13", true)
+	// CreateSKU("SKU-14", true)
+	// CreateSKU("SKU-15", true)
+	// CreateSKU("SKU-16", true)
+	// CreateSKU("SKU-17", true)
+	// CreateSKU("SKU-18", true)
+	// CreateSKU("SKU-19", true)
+	// CreateSKU("SKU-20", true)
+	// CreateSKU("SKU-21", true)
+
+
+
+p,_ := getPOIBySKUID([]int{1,2})
+fmt.Println(p)
 }
